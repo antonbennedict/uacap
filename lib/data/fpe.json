@@ -1,0 +1,22 @@
+[
+  {
+    "id": "fpe-001",
+    "memberPin": "01-234567890-1",
+    "clinicId": "clinic-001",
+    "encounterDate": "2026-05-10T10:00:00Z",
+    "vitalSigns": {
+      "heightCm": 160,
+      "weightKg": 65,
+      "bloodPressureSystolic": 120,
+      "bloodPressureDiastolic": 80,
+      "fastingBloodSugar": 95
+    },
+    "lifestyle": {
+      "smokingStatus": "Never",
+      "alcoholConsumption": "Occasional"
+    },
+    "medicalHistory": "No significant past medical history.",
+    "status": "Dispatched",
+    "dispatchedAt": "2026-05-10T11:00:00Z"
+  }
+]

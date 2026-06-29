@@ -1,0 +1,82 @@
+[
+  {
+    "id": "clinic-001",
+    "name": "UP Diliman Health Service",
+    "shortName": "UPDHS",
+    "address": "University Avenue, UP Diliman Campus",
+    "city": "Quezon City",
+    "province": "Metro Manila",
+    "zipCode": "1101",
+    "latitude": 14.6551,
+    "longitude": 121.0671,
+    "phone": "(02) 8981-8500 local 3841",
+    "email": "healthservice@upd.edu.ph",
+    "operatingHours": {
+      "weekdays": "8:00 AM – 5:00 PM",
+      "saturday": "8:00 AM – 12:00 PM",
+      "sunday": "Closed"
+    },
+    "philhealthAccredited": true,
+    "phicCode": "NCR-QC-2024-001"
+  },
+  {
+    "id": "clinic-002",
+    "name": "Ateneo de Manila Medical and Health Services",
+    "shortName": "ADMU Medical",
+    "address": "Katipunan Avenue, Loyola Heights",
+    "city": "Quezon City",
+    "province": "Metro Manila",
+    "zipCode": "1108",
+    "latitude": 14.6401,
+    "longitude": 121.0778,
+    "phone": "(02) 8426-6001 local 4200",
+    "email": "medhealth@ateneo.edu.ph",
+    "operatingHours": {
+      "weekdays": "7:30 AM – 5:30 PM",
+      "saturday": "8:00 AM – 12:00 PM",
+      "sunday": "Closed"
+    },
+    "philhealthAccredited": true,
+    "phicCode": "NCR-QC-2024-002"
+  },
+  {
+    "id": "clinic-003",
+    "name": "UST Health Services",
+    "shortName": "UST Health",
+    "address": "España Boulevard, Sampaloc",
+    "city": "Manila",
+    "province": "Metro Manila",
+    "zipCode": "1008",
+    "latitude": 14.6097,
+    "longitude": 120.9898,
+    "phone": "(02) 8786-1611 local 8100",
+    "email": "healthservices@ust.edu.ph",
+    "operatingHours": {
+      "weekdays": "8:00 AM – 6:00 PM",
+      "saturday": "8:00 AM – 12:00 PM",
+      "sunday": "Closed"
+    },
+    "philhealthAccredited": true,
+    "phicCode": "NCR-MNL-2024-003"
+  },
+  {
+    "id": "clinic-004",
+    "name": "PhilHealth NCR Express Clinic",
+    "shortName": "PHIC NCR Express",
+    "address": "Citystate Centre Building, 709 Shaw Boulevard",
+    "city": "Pasig City",
+    "province": "Metro Manila",
+    "zipCode": "1600",
+    "latitude": 14.5730,
+    "longitude": 121.0603,
+    "phone": "(02) 8441-7442",
+    "email": "ncrexpress@philhealth.gov.ph",
+    "operatingHours": {
+      "weekdays": "8:00 AM – 5:00 PM",
+      "saturday": "9:00 AM – 1:00 PM",
+      "sunday": "Closed"
+    },
+    "philhealthAccredited": true,
+    "phicCode": "NCR-PSG-2024-004"
+  }
+]

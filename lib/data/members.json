@@ -1,0 +1,386 @@
+[
+  {
+    "id": "member-001",
+    "philhealthPin": "01-234567890-1",
+    "lastName": "Santos",
+    "firstName": "Maria",
+    "middleName": "Cruz",
+    "suffix": "",
+    "dateOfBirth": "1985-03-15",
+    "sex": "Female",
+    "civilStatus": "Married",
+    "address": "123 Sampaguita Street, Brgy. Commonwealth",
+    "city": "Quezon City",
+    "province": "Metro Manila",
+    "zipCode": "1121",
+    "phone": "09171234567",
+    "email": "maria.santos@email.com",
+    "membershipType": "Employed",
+    "membershipStatus": "Active",
+    "employer": "Department of Education, NCR",
+    "registeredClinicId": "clinic-001",
+    "dependents": [
+      {
+        "id": "dep-001-1",
+        "fullName": "Jose Antonio Santos",
+        "relationship": "Spouse",
+        "dateOfBirth": "1983-07-22",
+        "sex": "Male"
+      },
+      {
+        "id": "dep-001-2",
+        "fullName": "Sofia Maria Santos",
+        "relationship": "Child",
+        "dateOfBirth": "2010-11-05",
+        "sex": "Female"
+      }
+    ],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 2500,
+      "availments": 2,
+      "lastAvailmentDate": "2026-05-12"
+    }
+  },
+  {
+    "id": "member-002",
+    "philhealthPin": "02-345678901-2",
+    "lastName": "Reyes",
+    "firstName": "Juan",
+    "middleName": "dela",
+    "suffix": "Jr.",
+    "dateOfBirth": "1978-06-30",
+    "sex": "Male",
+    "civilStatus": "Married",
+    "address": "456 Maharlika Road, Brgy. Batasan Hills",
+    "city": "Quezon City",
+    "province": "Metro Manila",
+    "zipCode": "1126",
+    "phone": "09281234567",
+    "email": "juan.reyes@gmail.com",
+    "membershipType": "Self-Employed",
+    "membershipStatus": "Active",
+    "registeredClinicId": "clinic-001",
+    "dependents": [
+      {
+        "id": "dep-002-1",
+        "fullName": "Ana Reyes",
+        "relationship": "Spouse",
+        "dateOfBirth": "1980-02-14",
+        "sex": "Female"
+      }
+    ],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 0,
+      "availments": 0,
+      "lastAvailmentDate": null
+    }
+  },
+  {
+    "id": "member-003",
+    "philhealthPin": "03-456789012-3",
+    "lastName": "Garcia",
+    "firstName": "Ana",
+    "middleName": "Bautista",
+    "suffix": "",
+    "dateOfBirth": "1992-12-01",
+    "sex": "Female",
+    "civilStatus": "Single",
+    "address": "789 Katipunan Ave., Brgy. Loyola Heights",
+    "city": "Quezon City",
+    "province": "Metro Manila",
+    "zipCode": "1108",
+    "phone": "09391234567",
+    "email": "ana.garcia@ateneo.edu.ph",
+    "membershipType": "Employed",
+    "membershipStatus": "Active",
+    "employer": "Ateneo de Manila University",
+    "registeredClinicId": "clinic-002",
+    "dependents": [],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 5000,
+      "availments": 4,
+      "lastAvailmentDate": "2026-06-01"
+    }
+  },
+  {
+    "id": "member-004",
+    "philhealthPin": "04-567890123-4",
+    "lastName": "Mendoza",
+    "firstName": "Roberto",
+    "middleName": "Flores",
+    "suffix": "",
+    "dateOfBirth": "1965-08-22",
+    "sex": "Male",
+    "civilStatus": "Married",
+    "address": "101 España Blvd., Brgy. Sampaloc",
+    "city": "Manila",
+    "province": "Metro Manila",
+    "zipCode": "1008",
+    "phone": "09191234567",
+    "email": "roberto.mendoza@ust.edu.ph",
+    "membershipType": "Employed",
+    "membershipStatus": "Lapsed",
+    "employer": "University of Santo Tomas",
+    "registeredClinicId": "clinic-003",
+    "dependents": [
+      {
+        "id": "dep-004-1",
+        "fullName": "Carla Mendoza",
+        "relationship": "Spouse",
+        "dateOfBirth": "1968-04-10",
+        "sex": "Female"
+      },
+      {
+        "id": "dep-004-2",
+        "fullName": "Marco Mendoza",
+        "relationship": "Child",
+        "dateOfBirth": "1995-09-15",
+        "sex": "Male"
+      },
+      {
+        "id": "dep-004-3",
+        "fullName": "Lucia Mendoza",
+        "relationship": "Child",
+        "dateOfBirth": "1998-03-22",
+        "sex": "Female"
+      }
+    ],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 10000,
+      "availments": 8,
+      "lastAvailmentDate": "2026-01-15"
+    }
+  },
+  {
+    "id": "member-005",
+    "philhealthPin": "05-678901234-5",
+    "lastName": "Torres",
+    "firstName": "Elena",
+    "middleName": "Villanueva",
+    "suffix": "",
+    "dateOfBirth": "1990-04-18",
+    "sex": "Female",
+    "civilStatus": "Single",
+    "address": "222 Shaw Boulevard, Brgy. Wack-Wack",
+    "city": "Mandaluyong City",
+    "province": "Metro Manila",
+    "zipCode": "1555",
+    "phone": "09501234567",
+    "email": "elena.torres@yahoo.com",
+    "membershipType": "Voluntary",
+    "membershipStatus": "Active",
+    "registeredClinicId": "clinic-004",
+    "dependents": [],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 1200,
+      "availments": 1,
+      "lastAvailmentDate": "2026-04-03"
+    }
+  },
+  {
+    "id": "member-006",
+    "philhealthPin": "06-789012345-6",
+    "lastName": "Ramirez",
+    "firstName": "Carlos",
+    "middleName": "Aquino",
+    "suffix": "Sr.",
+    "dateOfBirth": "1958-11-25",
+    "sex": "Male",
+    "civilStatus": "Widowed",
+    "address": "333 Congressional Avenue, Brgy. Bahay Toro",
+    "city": "Quezon City",
+    "province": "Metro Manila",
+    "zipCode": "1106",
+    "phone": "09091234567",
+    "email": "",
+    "membershipType": "Lifetime",
+    "membershipStatus": "Active",
+    "registeredClinicId": "clinic-001",
+    "dependents": [
+      {
+        "id": "dep-006-1",
+        "fullName": "Carlos Ramirez Jr.",
+        "relationship": "Child",
+        "dateOfBirth": "1985-06-30",
+        "sex": "Male"
+      }
+    ],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 3400,
+      "availments": 3,
+      "lastAvailmentDate": "2026-05-28"
+    }
+  },
+  {
+    "id": "member-007",
+    "philhealthPin": "07-890123456-7",
+    "lastName": "Dela Cruz",
+    "firstName": "Josephine",
+    "middleName": "Reyes",
+    "suffix": "",
+    "dateOfBirth": "1975-09-08",
+    "sex": "Female",
+    "civilStatus": "Married",
+    "address": "44 Magsaysay Boulevard, Brgy. Sta. Mesa",
+    "city": "Manila",
+    "province": "Metro Manila",
+    "zipCode": "1016",
+    "phone": "09221234567",
+    "email": "josephine.delacruz@doh.gov.ph",
+    "membershipType": "Employed",
+    "membershipStatus": "Active",
+    "employer": "Department of Health",
+    "registeredClinicId": "clinic-003",
+    "dependents": [
+      {
+        "id": "dep-007-1",
+        "fullName": "Bernard Dela Cruz",
+        "relationship": "Spouse",
+        "dateOfBirth": "1972-12-14",
+        "sex": "Male"
+      },
+      {
+        "id": "dep-007-2",
+        "fullName": "Patricia Dela Cruz",
+        "relationship": "Child",
+        "dateOfBirth": "2005-02-20",
+        "sex": "Female"
+      }
+    ],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 6800,
+      "availments": 6,
+      "lastAvailmentDate": "2026-06-15"
+    }
+  },
+  {
+    "id": "member-008",
+    "philhealthPin": "08-901234567-8",
+    "lastName": "Navarro",
+    "firstName": "Michael",
+    "middleName": "Santos",
+    "suffix": "",
+    "dateOfBirth": "2000-02-14",
+    "sex": "Male",
+    "civilStatus": "Single",
+    "address": "55 Katipunan Extension, Brgy. White Plains",
+    "city": "Quezon City",
+    "province": "Metro Manila",
+    "zipCode": "1110",
+    "phone": "09321234567",
+    "email": "michael.navarro@gmail.com",
+    "membershipType": "Sponsored",
+    "membershipStatus": "Active",
+    "registeredClinicId": "clinic-002",
+    "dependents": [],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 0,
+      "availments": 0,
+      "lastAvailmentDate": null
+    }
+  },
+  {
+    "id": "member-009",
+    "philhealthPin": "09-012345678-9",
+    "lastName": "Villanueva",
+    "firstName": "Carmen",
+    "middleName": "Aguilar",
+    "suffix": "",
+    "dateOfBirth": "1969-07-04",
+    "sex": "Female",
+    "civilStatus": "Separated",
+    "address": "66 Ortigas Avenue, Brgy. Greenhills",
+    "city": "San Juan City",
+    "province": "Metro Manila",
+    "zipCode": "1502",
+    "phone": "09451234567",
+    "email": "carmen.villanueva@bpi.com.ph",
+    "membershipType": "Employed",
+    "membershipStatus": "Lapsed",
+    "employer": "BPI Family Savings Bank",
+    "registeredClinicId": "clinic-004",
+    "dependents": [
+      {
+        "id": "dep-009-1",
+        "fullName": "Ricardo Villanueva",
+        "relationship": "Child",
+        "dateOfBirth": "1998-11-30",
+        "sex": "Male"
+      }
+    ],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 9200,
+      "availments": 7,
+      "lastAvailmentDate": "2026-02-28"
+    }
+  },
+  {
+    "id": "member-010",
+    "philhealthPin": "10-123456789-0",
+    "lastName": "Fernandez",
+    "firstName": "Antonio",
+    "middleName": "Bautista",
+    "suffix": "III",
+    "dateOfBirth": "1982-01-20",
+    "sex": "Male",
+    "civilStatus": "Married",
+    "address": "77 Ayala Avenue, Brgy. Bel-Air",
+    "city": "Makati City",
+    "province": "Metro Manila",
+    "zipCode": "1209",
+    "phone": "09671234567",
+    "email": "antonio.fernandez@ayalaland.com",
+    "membershipType": "Employed",
+    "membershipStatus": "Active",
+    "employer": "Ayala Land Inc.",
+    "registeredClinicId": "clinic-004",
+    "dependents": [
+      {
+        "id": "dep-010-1",
+        "fullName": "Isabella Fernandez",
+        "relationship": "Spouse",
+        "dateOfBirth": "1984-08-12",
+        "sex": "Female"
+      },
+      {
+        "id": "dep-010-2",
+        "fullName": "Miguel Fernandez",
+        "relationship": "Child",
+        "dateOfBirth": "2015-05-07",
+        "sex": "Male"
+      },
+      {
+        "id": "dep-010-3",
+        "fullName": "Sofia Fernandez",
+        "relationship": "Child",
+        "dateOfBirth": "2018-09-23",
+        "sex": "Female"
+      }
+    ],
+    "yakapBenefit": {
+      "year": 2026,
+      "totalAllotment": 10000,
+      "usedAmount": 4100,
+      "availments": 3,
+      "lastAvailmentDate": "2026-06-10"
+    }
+  }
+]
