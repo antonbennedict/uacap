@@ -7,7 +7,7 @@ import {
   UserCheck, FileText, Package, Activity, Heart,
   ChevronRight, Bell, Settings, LogOut, Stethoscope,
   LayoutDashboard, Server, FlaskConical, ClipboardList, Users,
-  Shield
+  Shield, ClipboardCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,6 +25,13 @@ const navItems = [
     icon: UserCheck,
     description: 'CEWS verification & YAKAP',
     color: '#10B981',
+  },
+  {
+    href: '/empanelment',
+    label: 'YAKAP Empanelment',
+    icon: ClipboardCheck,
+    description: 'PCU enrollment wizard',
+    color: '#14B8A6',
   },
   {
     href: '/fpe',
