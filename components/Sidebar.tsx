@@ -4,83 +4,84 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import {
-  UserCheck, FileText, Package, Activity, Heart,
+  UserCheck, Activity, Heart,
   ChevronRight, Bell, Settings, LogOut, Stethoscope,
   LayoutDashboard, Server, FlaskConical, ClipboardList, Users,
   Shield, ClipboardCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const navItems = [
+const navGroups = [
   {
-    href: '/dashboard',
-    label: 'OPD Dashboard',
-    icon: LayoutDashboard,
-    description: 'Triage & daily operations',
-    color: '#3B82F6',
+    category: 'PhilCheck',
+    items: [
+      {
+        href: '/dashboard',
+        label: 'OPD Dashboard',
+        icon: LayoutDashboard,
+        description: 'Triage & daily operations',
+        color: '#3B82F6',
+      },
+      {
+        href: '/eligibility',
+        label: 'Benefit Eligibility (PBEF)',
+        icon: UserCheck,
+        description: 'CEWS verification & YAKAP',
+        color: '#10B981',
+      },
+    ],
   },
   {
-    href: '/eligibility',
-    label: 'Benefit Eligibility (PBEF)',
-    icon: UserCheck,
-    description: 'CEWS verification & YAKAP',
-    color: '#10B981',
+    category: 'UACAP',
+    items: [
+      {
+        href: '/empanelment',
+        label: 'YAKAP Empanelment',
+        icon: ClipboardCheck,
+        description: 'PCU enrollment wizard',
+        color: '#14B8A6',
+      },
+      {
+        href: '/fpe',
+        label: 'FPE Encoding & Submit',
+        icon: Stethoscope,
+        description: 'First Patient Encounter',
+        color: '#00843D',
+      },
+      {
+        href: '/consultation',
+        label: 'YAKAP Consultation',
+        icon: ClipboardList,
+        description: 'Consultation & follow-ups',
+        color: '#8B5CF6',
+      },
+      {
+        href: '/lab-results',
+        label: 'Lab Results Encoding',
+        icon: FlaskConical,
+        description: 'Diagnostics & findings',
+        color: '#EF4444',
+      },
+    ],
   },
   {
-    href: '/empanelment',
-    label: 'YAKAP Empanelment',
-    icon: ClipboardCheck,
-    description: 'PCU enrollment wizard',
-    color: '#14B8A6',
-  },
-  {
-    href: '/fpe',
-    label: 'FPE Encoding & Submit',
-    icon: Stethoscope,
-    description: 'First Patient Encounter',
-    color: '#00843D',
-  },
-  {
-    href: '/consultation',
-    label: 'YAKAP SOAP Notes',
-    icon: ClipboardList,
-    description: 'Consultation & follow-ups',
-    color: '#8B5CF6',
-  },
-  {
-    href: '/lab-results',
-    label: 'Lab Results Encoding',
-    icon: FlaskConical,
-    description: 'Diagnostics & findings',
-    color: '#EF4444',
-  },
-  {
-    href: '/prescription-builder',
-    label: 'Prescription Builder',
-    icon: FileText,
-    description: 'GAMOT formulary & eRx',
-    color: '#F59E0B',
-  },
-  {
-    href: '/gamot',
-    label: 'GAMOT Inventory',
-    icon: Package,
-    description: 'Medicine stock management',
-    color: '#0EA5E9',
-  },
-  {
-    href: '/masterlist',
-    label: 'Masterlist Import',
-    icon: Users,
-    description: 'Automated roster sync',
-    color: '#6366F1',
-  },
-  {
-    href: '/transmittal',
-    label: 'Direct PHIC Dispatch',
-    icon: Server,
-    description: 'Transmittal portal',
-    color: '#EC4899',
+    category: 'Import & Export',
+    items: [
+      {
+        href: '/masterlist',
+        label: 'Masterlist Import',
+        icon: Users,
+        description: 'Automated roster sync',
+        color: '#6366F1',
+      },
+      {
+        href: '/transmittal',
+        label: 'Direct PHIC Dispatch',
+        icon: Server,
+        description: 'Transmittal portal',
+        color: '#EC4899',
+      },
+    ],
   },
 ];
 
@@ -116,7 +117,7 @@ export default function Sidebar() {
           <Heart className="w-5 h-5 text-white fill-white" />
         </div>
         <div>
-          <h1 className="text-white font-bold text-base leading-tight">eKonsulta</h1>
+          <h1 className="text-white font-bold text-base leading-tight">UACAP</h1>
           <p className="text-white/50 text-xs leading-tight">PhilHealth EMR Portal</p>
         </div>
       </div>
@@ -145,48 +146,52 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-0 py-3 overflow-y-auto scrollbar-thin">
-        <p className="text-white/30 text-xs font-semibold uppercase tracking-widest px-7 mb-2">
-          Main Modules
-        </p>
-        <ul className="space-y-0.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`sidebar-nav-link group ${isActive ? 'active' : ''}`}
-                  style={isActive ? {
-                    background: `linear-gradient(135deg, ${item.color}22, ${item.color}11)`,
-                    borderLeft: `3px solid ${item.color}`,
-                    color: '#ffffff',
-                    marginLeft: '0.75rem',
-                    paddingLeft: '0.75rem',
-                    boxShadow: `0 4px 15px ${item.color}33`,
-                  } : {}}
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
-                    isActive ? '' : 'group-hover:bg-white/10'
-                  }`}
-                    style={isActive ? { background: `${item.color}25` } : {}}>
-                    <Icon className="w-4 h-4 flex-shrink-0" style={isActive ? { color: item.color } : {}} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="block text-sm leading-tight">{item.label}</span>
-                    {isActive && (
-                      <span className="block text-xs text-white/50 leading-tight mt-0.5">{item.description}</span>
-                    )}
-                  </div>
-                  {isActive && (
-                    <ChevronRight className="w-4 h-4 flex-shrink-0 opacity-70" style={{ color: item.color }} />
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="flex-1 px-0 py-3 overflow-y-auto scrollbar-thin space-y-5">
+        {navGroups.map((group) => (
+          <div key={group.category} className="space-y-1">
+            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest px-7 mb-1">
+              {group.category}
+            </p>
+            <ul className="space-y-0.5">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`sidebar-nav-link group ${isActive ? 'active' : ''}`}
+                      style={isActive ? {
+                        background: `linear-gradient(135deg, ${item.color}22, ${item.color}11)`,
+                        borderLeft: `3px solid ${item.color}`,
+                        color: '#ffffff',
+                        marginLeft: '0.75rem',
+                        paddingLeft: '0.75rem',
+                        boxShadow: `0 4px 15px ${item.color}33`,
+                      } : {}}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                        isActive ? '' : 'group-hover:bg-white/10'
+                      }`}
+                        style={isActive ? { background: `${item.color}25` } : {}}>
+                        <Icon className="w-4 h-4 flex-shrink-0" style={isActive ? { color: item.color } : {}} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="block text-sm leading-tight">{item.label}</span>
+                        {isActive && (
+                          <span className="block text-xs text-white/50 leading-tight mt-0.5">{item.description}</span>
+                        )}
+                      </div>
+                      {isActive && (
+                        <ChevronRight className="w-4 h-4 flex-shrink-0 opacity-70" style={{ color: item.color }} />
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </nav>
 
       {/* Bottom actions */}

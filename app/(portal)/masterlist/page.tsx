@@ -5,17 +5,17 @@ import { useAppStore } from '@/lib/store';
 import { Users, Server, CheckCircle, Loader2, Shield, Database, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
-const UNIVERSITIES = [
-  { id: 'upd', name: 'University of the Philippines Diliman', phicCode: 'HEI-NCR-001', accreditation: 'PAASCU Accredited Level IV' },
-  { id: 'admu', name: 'Ateneo de Manila University', phicCode: 'HEI-NCR-002', accreditation: 'PAASCU Accredited Level IV' },
-  { id: 'ust', name: 'University of Santo Tomas', phicCode: 'HEI-NCR-003', accreditation: 'ACSCU Accredited Level II' },
-  { id: 'dlsu', name: 'De La Salle University', phicCode: 'HEI-NCR-004', accreditation: 'PAASCU Accredited Level III' },
-];
+const INSTITUTION = {
+  id: 'ua',
+  name: 'University of the Assumption Clinic',
+  phicCode: 'R3-PMP-2024-001',
+  accreditation: 'PAASCU Accredited · PhilHealth Accredited UACAP'
+};
 
 export default function MasterlistPage() {
   const { masterlistEntries, importMasterlistEntries } = useAppStore();
 
-  const [selectedUniv, setSelectedUniv] = useState(UNIVERSITIES[0]);
+
   const [isConnecting, setIsConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
@@ -39,15 +39,15 @@ export default function MasterlistPage() {
     setSelectedIds([]);
 
     const sequence = [
-      `[SYS] Initiating secure connection to E-Konsulta Registry Server...`,
-      `[NET] Resolving endpoint: registry.ekonsulta.phic.gov.ph:8443`,
-      `[SEC] Performing mTLS handshake (Cert: PHIC-EKONSULTA-NCR-2026)...`,
+      `[SYS] Initiating secure connection to UACAP Registry Server...`,
+      `[NET] Resolving endpoint: registry.uacap.phic.gov.ph:8443`,
+      `[SEC] Performing mTLS handshake (Cert: PHIC-EKONSULTA-R3-2026)...`,
       `[NET] Connection established. TLS 1.3 · AES-256-GCM`,
       `[AUTH] Authenticating institutional credentials...`,
-      `[AUTH] Validating HEI accreditation code: ${selectedUniv.phicCode}`,
-      `[AUTH] Accreditation status: ${selectedUniv.accreditation} ✓`,
-      `[SYS] Fetching enrollment roster for ${selectedUniv.name}...`,
-      `[DB] Querying PHIC-linked student/staff records...`,
+      `[AUTH] Validating HEI accreditation code: ${INSTITUTION.phicCode}`,
+      `[AUTH] Accreditation status: ${INSTITUTION.accreditation} ✓`,
+      `[SYS] Fetching enrollment roster for ${INSTITUTION.name}...`,
+      `[DB] Querying PHIC-linked patient records (Students, Staff, Guests)...`,
       `[DB] ${masterlistEntries.length} profiles found. Matching against local registry...`,
       `[DB] ${pendingEntries.length} unimported profiles detected.`,
       `[SYS] Roster sync complete. Ready for import.`,
@@ -93,7 +93,7 @@ export default function MasterlistPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Automated Masterlist Import</h1>
-          <p className="text-sm text-gray-500">Secure E-Konsulta Registry Sync</p>
+          <p className="text-sm text-gray-500">Secure UACAP Registry Sync</p>
         </div>
       </div>
 
@@ -103,28 +103,18 @@ export default function MasterlistPage() {
           <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><Server className="w-4 h-4" /> Registry Connection</h2>
           <div className="mb-4">
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-2">Institution</label>
-            <select
-              value={selectedUniv.id}
-              onChange={e => {
-                const u = UNIVERSITIES.find(u => u.id === e.target.value)!;
-                setSelectedUniv(u);
-                setConnected(false);
-                setLogs([]);
-              }}
-              disabled={isConnecting}
-              className="form-input"
-            >
-              {UNIVERSITIES.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
+            <div className="form-input bg-gray-50 text-gray-700 font-medium py-2.5 px-3 border border-gray-200 rounded-xl">
+              {INSTITUTION.name}
+            </div>
           </div>
           <div className="px-4 py-3 bg-blue-50 rounded-xl border border-blue-100 mb-4">
-            <p className="text-xs font-mono text-blue-700">PHIC Code: {selectedUniv.phicCode}</p>
-            <p className="text-xs text-blue-500 mt-0.5">{selectedUniv.accreditation}</p>
+            <p className="text-xs font-mono text-blue-700">PHIC Code: {INSTITUTION.phicCode}</p>
+            <p className="text-xs text-blue-500 mt-0.5">{INSTITUTION.accreditation}</p>
           </div>
           <button onClick={handleConnect} disabled={isConnecting}
             className="btn-primary w-full justify-center bg-blue-600 hover:bg-blue-700 disabled:opacity-50">
             {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            {isConnecting ? 'Connecting...' : 'Connect to E-Konsulta Server'}
+            {isConnecting ? 'Connecting...' : 'Connect to UACAP Server'}
           </button>
           {connected && (
             <p className="text-xs text-emerald-600 mt-2 text-center flex items-center justify-center gap-1">
@@ -166,7 +156,7 @@ export default function MasterlistPage() {
         <div className="card-glass p-5 animate-fade-in">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="font-semibold text-gray-900">Pending Profiles — {selectedUniv.name}</h2>
+              <h2 className="font-semibold text-gray-900">Pending Profiles — {INSTITUTION.name}</h2>
               <p className="text-xs text-gray-400">{pendingEntries.length} unimported · {importedEntries.length} already in registry</p>
             </div>
             <div className="flex gap-2">
@@ -209,7 +199,11 @@ export default function MasterlistPage() {
                       <p className="text-xs text-gray-400">{entry.email}</p>
                     </td>
                     <td>
-                      <span className={`badge text-xs ${entry.type === 'Student' ? 'badge-blue' : entry.type === 'Faculty' ? 'badge-green' : 'badge-gray'}`}>{entry.type}</span>
+                      <span className={`badge text-xs ${
+                        entry.type === 'Student' ? 'badge-blue' :
+                        entry.type === 'Staff' || entry.type === 'Faculty' ? 'badge-green' :
+                        'badge-yellow'
+                      }`}>{entry.type}</span>
                     </td>
                     <td className="text-sm text-gray-700">{entry.department}</td>
                     <td className="font-mono text-xs text-gray-600">{entry.philhealthPin}</td>

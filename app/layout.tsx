@@ -6,9 +6,9 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'eKonsulta | PhilHealth Outpatient EMR Portal',
+  title: 'UACAP | PhilHealth Outpatient EMR Portal',
   description: 'PhilHealth YAKAP Outpatient EMR — Eligibility Check, GAMOT Formulary, and Electronic Prescription System for accredited clinics.',
-  keywords: 'PhilHealth, YAKAP, GAMOT, outpatient, EMR, prescription, eKonsulta',
+  keywords: 'PhilHealth, YAKAP, GAMOT, outpatient, EMR, prescription, UACAP',
   authors: [{ name: 'PhilHealth NCR' }],
   robots: 'noindex,nofollow',
 };

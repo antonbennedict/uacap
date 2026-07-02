@@ -11,7 +11,7 @@ const handler = NextAuth({
       },
       async authorize(credentials, req) {
         if (credentials?.username === "admin" && credentials?.password === "admin123") {
-          return { id: "1", name: "Admin User", email: "admin@ekonsulta.gov.ph" };
+          return { id: "1", name: "Admin User", email: "admin@uacap.gov.ph" };
         }
         return null;
       }

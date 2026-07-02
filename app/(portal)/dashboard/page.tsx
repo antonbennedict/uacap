@@ -5,7 +5,7 @@ import { useAppStore } from '@/lib/store';
 import membersData from '@/lib/data/members.json';
 import type { Member, TriagePriority } from '@/lib/types';
 import {
-  LayoutDashboard, Users, Stethoscope, FileText, AlertTriangle,
+  LayoutDashboard, Users, Stethoscope, AlertTriangle,
   Clock, ChevronRight, Plus, Activity, ClipboardList, Wallet,
   CheckCircle, Timer, UserCheck, Zap
 } from 'lucide-react';
@@ -105,7 +105,7 @@ export default function DashboardPage() {
           <div className="flex justify-between items-start"><div><p className="text-xs text-gray-400 uppercase tracking-wider">Completed</p><p className="text-3xl font-bold text-emerald-500 mt-1">{done}</p></div><CheckCircle className="w-5 h-5 text-emerald-400" /></div>
         </div>
         <div className="card-stat border-b-4 border-purple-500">
-          <div className="flex justify-between items-start"><div><p className="text-xs text-gray-400 uppercase tracking-wider">SOAP Notes</p><p className="text-3xl font-bold text-purple-500 mt-1">{soapNotes.length}</p></div><ClipboardList className="w-5 h-5 text-purple-400" /></div>
+          <div className="flex justify-between items-start"><div><p className="text-xs text-gray-400 uppercase tracking-wider">Consultations</p><p className="text-3xl font-bold text-purple-500 mt-1">{soapNotes.length}</p></div><ClipboardList className="w-5 h-5 text-purple-400" /></div>
         </div>
         <div className="card-stat border-b-4 border-red-400">
           <div className="flex justify-between items-start"><div><p className="text-xs text-gray-400 uppercase tracking-wider">Stock Alerts</p><p className="text-3xl font-bold text-red-500 mt-1">{lowStock}</p></div><AlertTriangle className="w-5 h-5 text-red-400" /></div>
@@ -194,9 +194,8 @@ export default function DashboardPage() {
               {[
                 { href: '/eligibility', label: 'Check Eligibility (PBEF)', icon: UserCheck, color: 'text-blue-600' },
                 { href: '/fpe', label: 'Encode FPE', icon: Stethoscope, color: 'text-emerald-600' },
-                { href: '/consultation', label: 'New SOAP Note', icon: ClipboardList, color: 'text-purple-600' },
+                { href: '/consultation', label: 'New Consultation', icon: ClipboardList, color: 'text-purple-600' },
                 { href: '/lab-results', label: 'Encode Lab Result', icon: Activity, color: 'text-rose-600' },
-                { href: '/prescription-builder', label: 'Write Prescription', icon: FileText, color: 'text-orange-600' },
               ].map(({ href, label, icon: Icon, color }) => (
                 <Link key={href} href={href} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group">
                   <Icon className={`w-4 h-4 ${color}`} />

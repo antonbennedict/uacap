@@ -1,23 +1,23 @@
 [
   {
     "id": "clinic-001",
-    "name": "UP Diliman Health Service",
-    "shortName": "UPDHS",
-    "address": "University Avenue, UP Diliman Campus",
-    "city": "Quezon City",
-    "province": "Metro Manila",
-    "zipCode": "1101",
-    "latitude": 14.6551,
-    "longitude": 121.0671,
-    "phone": "(02) 8981-8500 local 3841",
-    "email": "healthservice@upd.edu.ph",
+    "name": "University of the Assumption Clinic",
+    "shortName": "UAC",
+    "address": "Unisite Subdivision, Barangay Del Pilar",
+    "city": "San Fernando",
+    "province": "Pampanga",
+    "zipCode": "2000",
+    "latitude": 15.0289,
+    "longitude": 120.6975,
+    "phone": "(045) 961-3617",
+    "email": "clinic@ua.edu.ph",
     "operatingHours": {
       "weekdays": "8:00 AM – 5:00 PM",
       "saturday": "8:00 AM – 12:00 PM",
       "sunday": "Closed"
     },
     "philhealthAccredited": true,
-    "phicCode": "NCR-QC-2024-001"
+    "phicCode": "R3-PMP-2024-001"
   },
   {
     "id": "clinic-002",

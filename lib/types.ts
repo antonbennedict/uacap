@@ -80,7 +80,7 @@ export interface LabResult {
 // ============================================================
 // Masterlist Import
 // ============================================================
-export type MasterlistMemberType = 'Student' | 'Staff' | 'Faculty';
+export type MasterlistMemberType = 'Student' | 'Staff' | 'Faculty' | 'Guest';
 
 export interface MasterlistEntry {
   id: string;

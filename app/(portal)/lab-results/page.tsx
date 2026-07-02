@@ -127,7 +127,7 @@ export default function LabResultsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Lab Results Encoding</h1>
-          <p className="text-sm text-gray-500">YAKAP Diagnostics · eKonsulta Laboratory</p>
+          <p className="text-sm text-gray-500">YAKAP Diagnostics · UACAP Laboratory</p>
         </div>
       </div>
 

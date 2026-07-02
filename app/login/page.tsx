@@ -95,7 +95,7 @@ export default function LoginPage() {
               <Heart className="w-6 h-6 text-white fill-white" />
             </div>
             <div>
-              <h1 className="text-white font-bold text-xl tracking-tight">UACAP</h1>
+              <h1 className="text-white font-bold text-xl tracking-tight">YAKAP</h1>
               <p className="text-white/40 text-xs tracking-wide">PhilHealth EMR Portal</p>
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function LoginPage() {
             <Heart className="w-5 h-5 text-white fill-white" />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-gray-900">eKonsulta</h1>
+            <h1 className="font-bold text-lg text-gray-900">UACAP</h1>
             <p className="text-gray-400 text-xs">PhilHealth EMR Portal</p>
           </div>
         </div>
@@ -183,7 +183,7 @@ export default function LoginPage() {
             <div className="p-8">
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h2>
-                <p className="text-gray-500 text-sm">Sign in to access the eKonsulta portal</p>
+                <p className="text-gray-500 text-sm">Sign in to access the UACAP portal</p>
               </div>
 
               {/* Demo credentials hint */}

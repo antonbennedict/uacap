@@ -4,11 +4,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import type { Member } from '@/lib/types';
 import {
-  UserSearch, ScanFace, ShieldCheck, FileCheck2,
+  UserSearch, ScanFace, FileCheck2,
   Search, ChevronRight, Check, Loader2, AlertCircle, Printer,
   Download, ClipboardList, Heart, Camera, BadgeCheck,
-  Fingerprint, Eye, PenLine, Eraser, RotateCcw,
-  CheckCircle2, RefreshCw, X
+  Fingerprint, Eye, RotateCcw,
+  CheckCircle2, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -16,37 +16,7 @@ import { toast } from 'sonner';
 const STEPS = [
   { id: 1, label: 'Select Patient',    icon: UserSearch,  color: '#3B82F6' },
   { id: 2, label: 'PCU Liveness',      icon: ScanFace,    color: '#8B5CF6' },
-  { id: 3, label: 'Informed Consent',  icon: ShieldCheck, color: '#F59E0B' },
-  { id: 4, label: 'YES Slip',          icon: FileCheck2,  color: '#10B981' },
-];
-
-// ── Consent Items ────────────────────────────────────────────
-const CONSENT_ITEMS = [
-  {
-    id: 'c1',
-    title: 'PhilHealth Data Privacy Consent',
-    text: 'I hereby consent to the collection, use, and processing of my personal and health information by PhilHealth and its accredited health care institutions (HCIs) in accordance with the Data Privacy Act of 2012 (R.A. 10173) for the purposes of health insurance benefits administration, claims processing, and healthcare service delivery.',
-  },
-  {
-    id: 'c2',
-    title: 'YAKAP Program Enrollment',
-    text: 'I voluntarily enroll in the YAKAP (Your All-around Kumprehensibong Alaga ng Pamilya) Program and agree to receive primary care services, preventive health interventions, and wellness monitoring from my designated Primary Care Unit (PCU). I understand that my health data may be shared among program-accredited facilities for continuity of care.',
-  },
-  {
-    id: 'c3',
-    title: 'eKonsulta Digital Records Authorization',
-    text: 'I authorize the designated PCU to maintain digital health records through the eKonsulta EMR system, including SOAP notes, laboratory results, prescriptions, and diagnostic findings. I understand these records are confidential and protected under applicable Philippine laws.',
-  },
-  {
-    id: 'c4',
-    title: 'Biometric Verification Consent',
-    text: 'I consent to biometric identity verification (facial recognition or fingerprint scan) as part of the PCU liveness check during each consultation visit. This ensures accurate patient identification and prevents fraudulent benefit claims.',
-  },
-  {
-    id: 'c5',
-    title: 'Terms & Conditions Acknowledgment',
-    text: 'I have read, understood, and agree to all terms and conditions of the YAKAP eKonsulta Primary Care Benefit program. I understand that misrepresentation of my identity or health information may result in disqualification from benefits and applicable legal consequences.',
-  },
+  { id: 3, label: 'YES Slip',          icon: FileCheck2,  color: '#10B981' },
 ];
 
 // ── Scan log entries ─────────────────────────────────────────
@@ -269,46 +239,111 @@ function Step2({ member, onVerified }: { member: Member; onVerified: () => void 
   const [logs,         setLogs]         = useState<string[]>([]);
   const [faceDetected, setFaceDetected] = useState(false);
   const [score,        setScore]        = useState(0);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [stream,       setStream]       = useState<MediaStream | null>(null);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const logEndRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Auto-scroll terminal
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
-  // Clean up on unmount
-  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+  // Sync stream to video element
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream, phase]);
 
-  const startScan = () => {
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
+  // Clean up stream on unmount or stream change
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
+
+  const stopStream = useCallback(() => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  }, [stream]);
+
+  // Turn off camera when verification is complete
+  useEffect(() => {
+    if (phase === 'verified') {
+      stopStream();
+    }
+  }, [phase, stopStream]);
+
+  const startScan = async () => {
     setPhase('initializing');
     setProgress(0);
     setLogs([]);
     setFaceDetected(false);
     setScore(0);
 
+    let activeStream: MediaStream | null = null;
+    try {
+      activeStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 300 }, height: { ideal: 300 } }
+      });
+      setStream(activeStream);
+    } catch (err) {
+      console.warn("Camera access failed/denied, proceeding with simulation:", err);
+    }
+
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
+
     // Schedule each log line with individual timeouts — avoids closure/stale-i issues
     SCAN_LOGS.forEach((entry, idx) => {
-      timerRef.current = setTimeout(() => {
+      const t = setTimeout(() => {
         setLogs(prev => [...prev, entry]);   // entry is captured correctly here
 
         const pct = Math.round((idx + 1) / SCAN_LOGS.length * 100);
         setProgress(pct);
         setScore(parseFloat(Math.min(98.7, (idx + 1) * 7.05).toFixed(1)));
 
-        if (idx === 4) { setPhase('scanning'); setFaceDetected(true); }
-        if (idx === 9) setPhase('processing');
-        if (idx === SCAN_LOGS.length - 1) {
+        // If a person/face is detected (idx === 5), let the phase be verified immediately
+        if (idx === 5) {
           setPhase('verified');
+          setFaceDetected(true);
           setScore(98.7);
           setProgress(100);
+          
+          // Clear all remaining timeouts in the sequence
+          timeoutsRef.current.forEach(clearTimeout);
+          timeoutsRef.current = [];
+
+          // Instantly populate the remaining logs to show completed check
+          const remainingLogs = SCAN_LOGS.slice(6);
+          setLogs(prev => [...prev, ...remainingLogs]);
+
+          if (activeStream) {
+            activeStream.getTracks().forEach(track => track.stop());
+            setStream(null);
+          }
         }
       }, idx * 450);
+      timeoutsRef.current.push(t);
     });
   };
 
   const reset = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current = [];
+    stopStream();
     setPhase('idle'); setProgress(0); setLogs([]); setFaceDetected(false); setScore(0);
   };
 
@@ -358,56 +393,63 @@ function Step2({ member, onVerified }: { member: Member; onVerified: () => void 
               }} />
             ))}
             {/* Face display */}
-            <div className="absolute inset-4 rounded-full overflow-hidden flex items-center justify-center"
-              style={{ background: phase === 'idle' ? '#F3F4F6' : 'linear-gradient(180deg,#1e1b4b,#2e1065)' }}>
-              {phase === 'idle'
-                ? <Camera className="w-12 h-12 text-gray-300" />
-                : (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    {/* Stylized face */}
-                    <div className="relative">
-                      <div className="w-16 h-20 rounded-full border-2 flex flex-col items-center justify-center gap-2"
-                        style={{ borderColor: faceDetected ? '#A78BFA' : '#4B5563' }}>
-                        <div className="flex gap-3">
-                          <div className="w-2.5 h-2.5 rounded-full bg-violet-300" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-violet-300" />
-                        </div>
-                        <div className="w-1 h-2 rounded-full bg-violet-400/50" />
-                        <div className={`w-6 h-1.5 rounded-full ${phase === 'verified' ? 'bg-emerald-400' : 'bg-violet-300'}`} />
+            <div className="absolute inset-4 rounded-full overflow-hidden flex items-center justify-center bg-gray-100">
+              {phase === 'idle' ? (
+                <Camera className="w-12 h-12 text-gray-300" />
+              ) : (
+                <div className="relative w-full h-full flex items-center justify-center bg-black">
+                  {stream && (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
+                    />
+                  )}
+                  {/* Stylized face overlay */}
+                  <div className="relative z-10">
+                    <div className="w-16 h-20 rounded-full border-2 border-dashed flex flex-col items-center justify-center gap-2"
+                      style={{ borderColor: faceDetected ? '#10B981' : '#A78BFA' }}>
+                      <div className="flex gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-violet-300 animate-pulse" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-violet-300 animate-pulse" />
                       </div>
-                      {/* Scan line */}
-                      {(phase === 'scanning' || phase === 'processing') && (
-                        <div className="absolute top-0 left-0 right-0 bottom-0 overflow-hidden rounded-full">
-                          <div className="h-0.5 w-full animate-bounce"
-                            style={{ background: '#A78BFA', marginTop: '50%', opacity: 0.8 }} />
-                        </div>
-                      )}
+                      <div className="w-1 h-2 rounded-full bg-violet-400/50" />
+                      <div className={`w-6 h-1.5 rounded-full ${phase === 'verified' ? 'bg-emerald-400' : 'bg-violet-300'}`} />
                     </div>
-                    {/* Landmark dots */}
-                    {faceDetected && (
-                      <>
-                        {[{top:'18%',left:'28%'},{top:'18%',right:'28%'},
-                          {top:'35%',left:'22%'},{top:'35%',right:'22%'},
-                          {top:'50%',left:'32%'},{top:'50%',right:'32%'},
-                          {top:'65%',left:'38%'},{top:'65%',right:'38%'},
-                          {top:'25%',left:'38%'},{top:'25%',right:'38%'}
-                        ].map((s, i) => (
-                          <div key={i} className="absolute w-1 h-1 rounded-full bg-violet-300"
-                            style={s as React.CSSProperties} />
-                        ))}
-                      </>
-                    )}
-                    {/* Verified overlay */}
-                    {phase === 'verified' && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/30 flex items-center justify-center">
-                          <Check className="w-6 h-6 text-emerald-400" />
-                        </div>
+                    {/* Scan line */}
+                    {(phase === 'scanning' || phase === 'processing') && (
+                      <div className="absolute top-0 left-0 right-0 bottom-0 overflow-hidden rounded-full">
+                        <div className="h-0.5 w-full animate-bounce"
+                          style={{ background: '#A78BFA', marginTop: '50%', opacity: 0.8 }} />
                       </div>
                     )}
                   </div>
-                )
-              }
+                  {/* Landmark dots overlay */}
+                  {faceDetected && (
+                    <div className="absolute inset-0 z-10 pointer-events-none">
+                      {[{top:'18%',left:'28%'},{top:'18%',right:'28%'},
+                        {top:'35%',left:'22%'},{top:'35%',right:'22%'},
+                        {top:'50%',left:'32%'},{top:'50%',right:'32%'},
+                        {top:'65%',left:'38%'},{top:'65%',right:'38%'},
+                        {top:'25%',left:'38%'},{top:'25%',right:'38%'}
+                      ].map((s, i) => (
+                        <div key={i} className="absolute w-1 h-1 rounded-full bg-violet-300"
+                          style={s as React.CSSProperties} />
+                      ))}
+                    </div>
+                  )}
+                  {/* Verified overlay */}
+                  {phase === 'verified' && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/80 flex items-center justify-center">
+                        <Check className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -516,253 +558,26 @@ function Step2({ member, onVerified }: { member: Member; onVerified: () => void 
       </div>
 
       {/* Proceed */}
-      {phase === 'verified' && (
-        <div className="animate-fade-in">
-          <button
-            id="proceed-to-consent-btn"
-            onClick={onVerified}
-            className="btn-primary w-full justify-center text-base py-3"
-            style={{ background: '#8B5CF6' }}>
-            Proceed to Informed Consent
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      )}
+      <div className="animate-fade-in">
+        <button
+          id="proceed-to-yes-slip-btn"
+          onClick={onVerified}
+          disabled={phase !== 'verified'}
+          className="btn-primary w-full justify-center text-base py-3 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ background: phase === 'verified' ? '#8B5CF6' : '#9CA3AF' }}>
+          Proceed to YES Slip
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
     </div>
   );
 }
 
 // ════════════════════════════════════════════════════════════
-// STEP 3 — Informed Consent + Signature Pad
+// STEP 3 — YES Slip
 // ════════════════════════════════════════════════════════════
-function Step3({ member, onConsented }: { member: Member; onConsented: (sig: string) => void }) {
-  const [checked,   setChecked]   = useState<Record<string, boolean>>({});
-  const [signed,    setSigned]    = useState(false);
-  const [sigDataUrl,setSigDataUrl] = useState('');
-  const [hasDrawn,  setHasDrawn]  = useState(false);
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const isDrawing  = useRef(false);
-  const lastPt     = useRef<{ x: number; y: number } | null>(null);
-
-  const allChecked = CONSENT_ITEMS.every(c => checked[c.id]);
-
-  // ── Canvas helpers ────────────────────────────────────────
-  function getXY(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
-    const canvas = canvasRef.current!;
-    const rect   = canvas.getBoundingClientRect();
-    const scaleX = canvas.width  / rect.width;
-    const scaleY = canvas.height / rect.height;
-    if ('touches' in e) {
-      const t = e.touches[0];
-      return { x: (t.clientX - rect.left) * scaleX, y: (t.clientY - rect.top) * scaleY };
-    }
-    return {
-      x: ((e as React.MouseEvent).clientX - rect.left) * scaleX,
-      y: ((e as React.MouseEvent).clientY - rect.top)  * scaleY,
-    };
-  }
-
-  function onPointerDown(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
-    e.preventDefault();
-    if (signed) return;
-    isDrawing.current = true;
-    const pt = getXY(e);
-    lastPt.current = pt;
-    const ctx = canvasRef.current!.getContext('2d')!;
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 1.2, 0, Math.PI * 2);
-    ctx.fillStyle = '#1e3a5f';
-    ctx.fill();
-    setHasDrawn(true);
-  }
-
-  function onPointerMove(e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) {
-    e.preventDefault();
-    if (!isDrawing.current || signed) return;
-    const canvas = canvasRef.current!;
-    const ctx    = canvas.getContext('2d')!;
-    const pt     = getXY(e);
-    ctx.beginPath();
-    ctx.moveTo(lastPt.current!.x, lastPt.current!.y);
-    ctx.lineTo(pt.x, pt.y);
-    ctx.strokeStyle = '#1e3a5f';
-    ctx.lineWidth   = 2.2;
-    ctx.lineCap     = 'round';
-    ctx.lineJoin    = 'round';
-    ctx.stroke();
-    lastPt.current = pt;
-  }
-
-  function onPointerUp() { isDrawing.current = false; lastPt.current = null; }
-
-  function clearSig() {
-    const canvas = canvasRef.current!;
-    canvas.getContext('2d')!.clearRect(0, 0, canvas.width, canvas.height);
-    setHasDrawn(false); setSigned(false); setSigDataUrl('');
-  }
-
-  function confirmSig() {
-    if (!hasDrawn) { toast.error('Please draw your signature first.'); return; }
-    const url = canvasRef.current!.toDataURL('image/png');
-    setSigDataUrl(url);
-    setSigned(true);
-    toast.success('Signature captured!');
-  }
-
-  function handleProceed() {
-    if (!allChecked) { toast.error('Please check all consent items.'); return; }
-    if (!signed)     { toast.error('Please sign before proceeding.'); return; }
-    onConsented(sigDataUrl);
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <div className="text-center">
-        <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center shadow-lg"
-          style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
-          <ShieldCheck className="w-7 h-7 text-white" />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900">Informed Consent</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Patient: <span className="font-semibold text-gray-700">{member.firstName} {member.lastName}</span>
-          {' '}· PIN: <span className="font-mono text-gray-600">{member.philhealthPin}</span>
-        </p>
-      </div>
-
-      {/* Progress */}
-      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-100">
-        <div className="flex-1">
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-gray-500">Consent items</span>
-            <span className="font-semibold text-gray-700">
-              {Object.values(checked).filter(Boolean).length} / {CONSENT_ITEMS.length}
-            </span>
-          </div>
-          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-300"
-              style={{
-                width: `${(Object.values(checked).filter(Boolean).length / CONSENT_ITEMS.length) * 100}%`,
-                background: allChecked ? '#F59E0B' : '#D97706',
-              }} />
-          </div>
-        </div>
-        {allChecked && (
-          <CheckCircle2 className="w-5 h-5 text-amber-500 flex-shrink-0 animate-fade-in" />
-        )}
-      </div>
-
-      {/* Consent items */}
-      <div className="space-y-2.5">
-        {CONSENT_ITEMS.map(item => (
-          <div key={item.id}
-            id={`consent-${item.id}`}
-            className={`card-glass p-4 border-2 cursor-pointer transition-all duration-200 ${
-              checked[item.id] ? 'border-amber-400 bg-amber-50/40' : 'border-transparent hover:border-gray-200'
-            }`}
-            onClick={() => setChecked(p => ({ ...p, [item.id]: !p[item.id] }))}>
-            <div className="flex gap-3">
-              <div className={`w-5 h-5 rounded flex-shrink-0 mt-0.5 flex items-center justify-center border-2 transition-all ${
-                checked[item.id] ? 'bg-amber-500 border-amber-500' : 'border-gray-300 bg-white'
-              }`}>
-                {checked[item.id] && <Check className="w-3 h-3 text-white" />}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900 mb-1">{item.title}</p>
-                <p className="text-xs text-gray-600 leading-relaxed">{item.text}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Signature pad */}
-      <div className="card-glass p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <PenLine className="w-4 h-4 text-gray-600" />
-            <h3 className="font-semibold text-gray-800 text-sm">Patient Signature</h3>
-            {!hasDrawn && <span className="text-xs text-gray-400">— Draw your signature below</span>}
-          </div>
-          <div className="flex gap-2">
-            {!signed ? (
-              <>
-                <button onClick={clearSig} id="clear-sig-btn"
-                  className="btn-secondary text-xs py-1.5 px-3">
-                  <Eraser className="w-3 h-3" /> Clear
-                </button>
-                <button onClick={confirmSig} id="confirm-sig-btn"
-                  disabled={!hasDrawn}
-                  className="btn-primary text-xs py-1.5 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: '#F59E0B' }}>
-                  <Check className="w-3 h-3" /> Confirm
-                </button>
-              </>
-            ) : (
-              <button onClick={() => { setSigned(false); clearSig(); }}
-                className="btn-secondary text-xs py-1.5 px-3">
-                <RefreshCw className="w-3 h-3" /> Re-sign
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className={`relative rounded-xl border-2 border-dashed overflow-hidden bg-gray-50 transition-colors ${
-          signed ? 'border-amber-400 bg-amber-50/30' : 'border-gray-200'
-        }`} style={{ height: 150 }}>
-          <canvas
-            ref={canvasRef}
-            width={540}
-            height={150}
-            className="w-full h-full touch-none"
-            style={{ cursor: signed ? 'default' : 'crosshair' }}
-            onMouseDown={onPointerDown}
-            onMouseMove={onPointerMove}
-            onMouseUp={onPointerUp}
-            onMouseLeave={onPointerUp}
-            onTouchStart={onPointerDown}
-            onTouchMove={onPointerMove}
-            onTouchEnd={onPointerUp}
-          />
-          {!hasDrawn && !signed && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <p className="text-gray-300 text-sm select-none">Sign here ✍</p>
-            </div>
-          )}
-          {signed && (
-            <div className="absolute bottom-2 right-2 pointer-events-none">
-              <span className="badge badge-green text-xs">
-                <Check className="w-3 h-3" /> Signed
-              </span>
-            </div>
-          )}
-        </div>
-
-        <p className="text-xs text-gray-400 mt-2">
-          By signing, <span className="font-semibold">{member.firstName} {member.lastName}</span> confirms
-          understanding and agreement to all items above. Date: {nowString()}
-        </p>
-      </div>
-
-      <button
-        id="generate-yes-slip-btn"
-        onClick={handleProceed}
-        disabled={!allChecked || !signed}
-        className="btn-primary w-full justify-center text-base py-3 disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{ background: allChecked && signed ? '#F59E0B' : undefined }}>
-        <FileCheck2 className="w-5 h-5" />
-        Generate YES Slip
-        <ChevronRight className="w-5 h-5" />
-      </button>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════
-// STEP 4 — YES Slip
-// ════════════════════════════════════════════════════════════
-function Step4({ member, sigDataUrl, onDone }: {
+function Step3({ member, onDone }: {
   member: Member;
-  sigDataUrl: string;
   onDone: () => void;
 }) {
   // Generate slip details once on mount
@@ -802,184 +617,191 @@ function Step4({ member, sigDataUrl, onDone }: {
       </div>
 
       {/* ── YES SLIP DOCUMENT ─────────────────────────── */}
-      <div id="yes-slip" className="card-glass overflow-hidden border border-gray-200 shadow-xl">
-        {/* Green header */}
-        <div className="px-7 py-5" style={{ background: 'linear-gradient(135deg, #00843D 0%, #005F2A 100%)' }}>
-          <div className="flex items-center justify-between">
+      {/* ── YES SLIP DOCUMENT ─────────────────────────── */}
+      <div id="yes-slip" className="bg-white overflow-hidden border-2 border-emerald-800 shadow-xl rounded-xl text-gray-950 font-sans max-w-2xl mx-auto">
+        
+        {/* Government / PHIC Header Banner */}
+        <div className="px-6 py-4 bg-white border-b-4 border-[#FFCD00]">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-                <Heart className="w-7 h-7 text-white fill-white" />
+              {/* Custom CSS PhilHealth Shield/Seal Logo */}
+              <div className="w-12 h-12 rounded-full border-2 border-[#00843D] bg-white flex items-center justify-center relative overflow-hidden shadow-sm flex-shrink-0">
+                <div className="absolute inset-0 bg-[#00843D]/10 rounded-full" />
+                <Heart className="w-6 h-6 text-[#00843D] fill-[#00843D] relative z-10" />
+                <div className="absolute bottom-0 inset-x-0 h-3 bg-[#FFCD00]" />
               </div>
               <div>
-                <p className="text-white font-bold text-lg leading-tight">PhilHealth</p>
-                <p className="text-white/80 text-sm">YAKAP eKonsulta Program</p>
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-none">Republic of the Philippines</p>
+                <p className="text-xs font-black text-[#00843D] uppercase tracking-wide mt-0.5">Philippine Health Insurance Corporation</p>
+                <p className="text-[10px] font-medium text-gray-600">YAKAP UACAP Primary Care Program</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-white/60 text-xs uppercase tracking-widest mb-0.5">YES Slip No.</p>
-              <p className="text-white font-bold text-lg font-mono tracking-wider">{slip.number}</p>
-              <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-emerald-400/30 text-emerald-100 text-xs font-semibold">
+            <div className="text-right border-l border-gray-200 pl-4 flex-shrink-0">
+              <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">YES SLIP NUMBER</p>
+              <p className="text-sm font-extrabold font-mono text-emerald-900 tracking-wider bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{slip.number}</p>
+              <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-[#00843D] text-white text-[9px] font-black tracking-widest">
                 ACTIVE
               </span>
             </div>
           </div>
         </div>
 
-        {/* Rainbow accent strip */}
-        <div className="h-1.5" style={{ background: 'linear-gradient(90deg,#00843D,#1D4ED8,#8B5CF6,#F59E0B,#EF4444)' }} />
+        {/* Title and Form Subhead */}
+        <div className="bg-[#00843D] text-white py-2.5 px-6 flex items-center justify-between">
+          <h3 className="text-xs font-black uppercase tracking-widest">
+            eKONSULTA MEMBER EMPANELMENT SLIP (YES SLIP)
+          </h3>
+          <p className="text-[10px] text-emerald-100 font-mono">PHIC Form YES-1 · 2026</p>
+        </div>
 
-        <div className="p-7 space-y-6">
-          {/* Title */}
-          <div className="text-center pb-4 border-b border-gray-100">
-            <h3 className="text-base font-bold text-gray-900 uppercase tracking-wider">
-              YAKAP Empanelment Slip
-            </h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Your Empanelment Slip (YES) · Official Record of Primary Care Enrollment
-            </p>
-          </div>
-
-          {/* Patient Information */}
-          <section>
-            <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-3">
-              Patient Information
-            </p>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-              {[
-                { label: 'Full Name',         value: `${member.firstName} ${member.middleName} ${member.lastName}${member.suffix ? ` ${member.suffix}` : ''}` },
-                { label: 'PhilHealth PIN',    value: member.philhealthPin, mono: true },
-                { label: 'Date of Birth',     value: formatDate(member.dateOfBirth) },
-                { label: 'Age / Sex',         value: `${calcAge(member.dateOfBirth)} years · ${member.sex}` },
-                { label: 'Civil Status',      value: member.civilStatus },
-                { label: 'Membership Type',   value: member.membershipType },
-                { label: 'Contact Number',    value: member.phone },
-              ].map(f => (
-                <div key={f.label}>
-                  <p className="text-xs text-gray-400">{f.label}</p>
-                  <p className={`text-sm font-semibold text-gray-900 ${f.mono ? 'font-mono' : ''}`}>{f.value}</p>
-                </div>
-              ))}
-              <div className="col-span-2">
-                <p className="text-xs text-gray-400">Address</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {member.address}, {member.city}, {member.province} {member.zipCode}
-                </p>
-              </div>
+        <div className="p-6 space-y-5 bg-stone-50/30">
+          
+          {/* PART I - MEMBER IDENTIFICATION */}
+          <div className="border border-gray-300 bg-white rounded-lg overflow-hidden shadow-sm">
+            <div className="bg-gray-100 border-b border-gray-300 px-4 py-1.5 flex justify-between items-center">
+              <span className="text-[10px] font-extrabold text-gray-700 uppercase tracking-wider">PART I - MEMBER IDENTIFICATION</span>
+              <span className="text-[9px] font-semibold text-gray-400">Section A</span>
             </div>
-          </section>
+            
+            <div className="grid grid-cols-12 text-xs">
+              <div className="col-span-8 p-3 border-r border-b border-gray-300">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">1. Member's Name (Last Name, First Name, Middle Name)</span>
+                <span className="text-xs font-bold text-gray-900 uppercase mt-0.5">
+                  {member.lastName}, {member.firstName} {member.middleName}
+                </span>
+              </div>
+              <div className="col-span-4 p-3 border-b border-gray-300 bg-emerald-50/20">
+                <span className="text-[9px] font-bold text-emerald-800 uppercase block">2. PhilHealth PIN</span>
+                <span className="text-xs font-mono font-extrabold text-emerald-950 mt-0.5 block">{member.philhealthPin}</span>
+              </div>
 
-          <div className="border-t border-dashed border-gray-200" />
+              <div className="col-span-4 p-3 border-r border-b border-gray-300">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">3. Date of Birth</span>
+                <span className="text-xs font-bold text-gray-900 mt-0.5">{formatDate(member.dateOfBirth)}</span>
+              </div>
+              <div className="col-span-4 p-3 border-r border-b border-gray-300">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">4. Sex / Age</span>
+                <span className="text-xs font-bold text-gray-900 uppercase mt-0.5">{member.sex} / {calcAge(member.dateOfBirth)} yrs</span>
+              </div>
+              <div className="col-span-4 p-3 border-b border-gray-300">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">5. Civil Status</span>
+                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.civilStatus}</span>
+              </div>
 
-          {/* Empanelment Details */}
-          <section>
-            <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-3">
-              Empanelment Details
-            </p>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-              {[
-                { label: 'Enrollment Date',       value: slip.generatedAt },
-                { label: 'Valid Until',            value: expiry },
-                { label: 'Liveness Verification', value: 'Completed ✓ (Confidence: 98.7%)' },
-                { label: 'Biometric Template',    value: 'Registered ✓' },
-                { label: 'Informed Consent',      value: 'Digitally Signed ✓' },
-              ].map(f => (
-                <div key={f.label}>
-                  <p className="text-xs text-gray-400">{f.label}</p>
-                  <p className="text-sm font-semibold text-gray-900">{f.value}</p>
-                </div>
-              ))}
-              <div>
-                <p className="text-xs text-gray-400">Enrollment Status</p>
-                <span className="badge badge-green text-xs">
-                  <CheckCircle2 className="w-3 h-3" /> ACTIVE
+              <div className="col-span-6 p-3 border-r border-gray-300">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">6. Membership Type</span>
+                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.membershipType}</span>
+              </div>
+              <div className="col-span-6 p-3">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">7. Contact Number / Email</span>
+                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.phone} {member.email ? `· ${member.email}` : ''}</span>
+              </div>
+
+              <div className="col-span-12 p-3 border-t border-gray-300 bg-gray-50/50">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">8. Residential Address</span>
+                <span className="text-xs font-bold text-gray-800 uppercase mt-0.5">
+                  {member.address}, {member.city}, {member.province} {member.zipCode}
                 </span>
               </div>
             </div>
-          </section>
-
-          <div className="border-t border-dashed border-gray-200" />
-
-          {/* Benefits */}
-          <section>
-            <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-3">
-              YAKAP Benefit Summary
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'Annual Allotment',  value: `₱${member.yakapBenefit.totalAllotment.toLocaleString()}`, icon: '💰', bg: '#F0FDF4', border: '#BBF7D0' },
-                { label: 'Used This Year',    value: `₱${member.yakapBenefit.usedAmount.toLocaleString()}`,     icon: '📊', bg: '#FEF3C7', border: '#FDE68A' },
-                { label: 'Remaining Balance', value: `₱${remaining.toLocaleString()}`,                         icon: '✅', bg: '#EFF6FF', border: '#BFDBFE' },
-              ].map(b => (
-                <div key={b.label} className="rounded-xl p-3 text-center"
-                  style={{ background: b.bg, border: `1px solid ${b.border}` }}>
-                  <p className="text-xl mb-0.5">{b.icon}</p>
-                  <p className="text-xs text-gray-500">{b.label}</p>
-                  <p className="font-bold text-gray-900 text-sm">{b.value}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Consent summary */}
-          <div className="rounded-xl p-4 border border-amber-100 bg-amber-50/50">
-            <p className="text-xs text-amber-800 font-bold uppercase tracking-wider mb-2">
-              Consent Items Acknowledged
-            </p>
-            <div className="space-y-1.5">
-              {CONSENT_ITEMS.map(c => (
-                <div key={c.id} className="flex items-start gap-2 text-xs text-amber-900">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <span>{c.title}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
-          {/* Signature block */}
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wider">Patient Signature</p>
-              {sigDataUrl && (
-                <div className="border-b border-gray-400 pb-1 mb-1" style={{ minHeight: 64 }}>
-                  <img src={sigDataUrl} alt="Patient Signature"
-                    className="max-h-16 object-contain object-left w-full" />
-                </div>
-              )}
-              <p className="text-xs font-semibold text-gray-800">{member.firstName} {member.lastName}</p>
-              <p className="text-xs text-gray-400">{slip.generatedAt}</p>
+          {/* PART II - PRIMARY CARE PROVIDER DETAILS */}
+          <div className="border border-gray-300 bg-white rounded-lg overflow-hidden shadow-sm">
+            <div className="bg-gray-100 border-b border-gray-300 px-4 py-1.5 flex justify-between items-center">
+              <span className="text-[10px] font-extrabold text-gray-700 uppercase tracking-wider">PART II - HEALTH CARE PROVIDER ASSIGNMENT</span>
+              <span className="text-[9px] font-semibold text-gray-400">Section B</span>
             </div>
-            <div>
-              <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wider">Authorized Clinic Officer</p>
-              <div className="border-b border-gray-400 pb-1 mb-1" style={{ minHeight: 64 }}>
-                <p className="text-xs text-gray-300 italic pt-8">Official Signature & Dry Seal</p>
+            
+            <div className="grid grid-cols-12 text-xs">
+              <div className="col-span-7 p-3 border-r border-gray-300">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">9. Assigned Healthcare Facility</span>
+                <span className="text-xs font-bold text-emerald-950 mt-0.5 block uppercase">University of the Assumption Clinic</span>
               </div>
-              <p className="text-xs font-semibold text-gray-800">PCU Clinic Administrator</p>
-              <p className="text-xs text-gray-400">eKonsulta Accredited Facility</p>
+              <div className="col-span-5 p-3">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">10. Accreditation / Code No.</span>
+                <span className="text-xs font-mono font-bold text-gray-900 mt-0.5 block">R3-PMP-2024-001</span>
+              </div>
+
+              <div className="col-span-12 border-t border-gray-300 grid grid-cols-3 bg-gray-50/50">
+                <div className="p-3 border-r border-gray-300">
+                  <span className="text-[9px] font-bold text-gray-400 uppercase block">11. Empanelment Date</span>
+                  <span className="text-xs font-bold text-gray-900 mt-0.5 block">{slip.generatedAt}</span>
+                </div>
+                <div className="p-3 border-r border-gray-300">
+                  <span className="text-[9px] font-bold text-gray-400 uppercase block">12. Period of Validity</span>
+                  <span className="text-xs font-bold text-gray-900 mt-0.5 block">Until {expiry}</span>
+                </div>
+                <div className="p-3">
+                  <span className="text-[9px] font-bold text-gray-400 uppercase block">13. Liveness Check</span>
+                  <span className="text-xs font-bold text-emerald-700 mt-0.5 block">VERIFIED ✓</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Disclaimer */}
-          <div className="rounded-xl p-4 border border-blue-100 bg-blue-50/50">
-            <p className="text-xs text-blue-800 leading-relaxed">
-              <span className="font-bold">Important: </span>
-              This YES Slip is official proof of YAKAP Primary Care enrollment. Present this document during
-              every eKonsulta consultation. Benefits are non-transferable and subject to PhilHealth policies.
-              For concerns, contact your registered PCU or PhilHealth at{' '}
-              <span className="font-mono font-semibold">1-800-10-2273</span>.
-            </p>
+          {/* PART III - BENEFIT PACKAGE SUMMARY */}
+          <div className="border border-gray-300 bg-white rounded-lg overflow-hidden shadow-sm">
+            <div className="bg-gray-100 border-b border-gray-300 px-4 py-1.5">
+              <span className="text-[10px] font-extrabold text-gray-700 uppercase tracking-wider">PART III - YAKAP BENEFIT SCHEDULE</span>
+            </div>
+            
+            <div className="grid grid-cols-3 divide-x divide-gray-300 text-xs">
+              <div className="p-3 text-center">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">Annual Allocation</span>
+                <span className="text-sm font-black text-gray-900 mt-1 block">₱{member.yakapBenefit.totalAllotment.toLocaleString()}</span>
+              </div>
+              <div className="p-3 text-center">
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">Availed Amount</span>
+                <span className="text-sm font-extrabold text-amber-600 mt-1 block">₱{member.yakapBenefit.usedAmount.toLocaleString()}</span>
+              </div>
+              <div className="p-3 text-center bg-emerald-50/10">
+                <span className="text-[9px] font-bold text-emerald-800 uppercase block">Remaining Balance</span>
+                <span className="text-sm font-black text-emerald-600 mt-1 block">₱{remaining.toLocaleString()}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Barcode decoration */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-            <div className="flex items-end gap-px opacity-25">
-              {Array.from({ length: 36 }).map((_, i) => (
-                <div key={i} className="bg-gray-900 rounded-sm"
-                  style={{ width: i % 3 === 0 ? 3 : 2, height: i % 5 === 0 ? 26 : i % 2 === 0 ? 18 : 12 }} />
+          {/* PART IV - AUTHORIZATION & ATTESTATION */}
+          <div className="border border-gray-300 bg-white rounded-lg overflow-hidden shadow-sm p-4">
+            <p className="text-[9px] font-extrabold text-gray-700 uppercase tracking-wider mb-3">PART IV - AUTHORIZATION & DIGITAL ATTESTATION</p>
+            <div className="grid grid-cols-2 gap-6 text-xs">
+              <div>
+                <span className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Member / Patient Representative</span>
+                <div className="border-b border-gray-300 h-10 flex items-end pb-1 font-mono text-[10px] text-emerald-700 font-bold">
+                  BIOMETRIC SIGN-OFF (FACE CHECK)
+                </div>
+                <span className="text-[10px] font-bold text-gray-800 block uppercase mt-1.5">{member.firstName} {member.lastName}</span>
+                <span className="text-[9px] text-gray-400">Timestamp: {slip.generatedAt}</span>
+              </div>
+              <div>
+                <span className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Attesting Facility Officer</span>
+                <div className="border-b border-gray-300 h-10 flex items-end pb-1 font-mono text-[10px] text-blue-700 font-bold">
+                  DIGITAL SIGNATURE SECURED (EMR-PHIC)
+                </div>
+                <span className="text-[10px] font-bold text-gray-800 block mt-1.5">PCU CLINIC ADMINISTRATOR</span>
+                <span className="text-[9px] text-gray-400">University of the Assumption Clinic</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Disclaimer */}
+          <div className="rounded-lg p-3.5 border border-[#FFCD00]/50 bg-[#FFCD00]/5 text-gray-800 text-[10px] leading-relaxed shadow-sm">
+            <span className="font-extrabold text-emerald-800">ATTESTATION DISCLAIMER: </span>
+            This document serves as the official Yakap UACAP Empanelment Slip (YES Slip) verifying registered status for primary care benefits with the Philippine Health Insurance Corporation. The empanelment details contained herein have been synchronized with the PHIC UACAP Registry Server. Present this slip or your PIN card to receive Gamot (prescriptions) and Lab allocations at accredited facilities.
+          </div>
+
+          {/* Barcode & Metadata */}
+          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+            <div className="flex items-end gap-0.5 opacity-40">
+              {Array.from({ length: 42 }).map((_, i) => (
+                <div key={i} className="bg-black"
+                  style={{ width: i % 4 === 0 ? 3 : 1.5, height: i % 6 === 0 ? 24 : i % 2 === 0 ? 18 : 10 }} />
               ))}
             </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-400 font-mono">{slip.number}</p>
-              <p className="text-xs text-gray-300">PhilHealth YAKAP YES v1.0</p>
+            <div className="text-right text-[9px] font-mono text-gray-400">
+              <p>TRACKING ID: {slip.number}-PHIC</p>
+              <p className="text-[8px] text-gray-300">PhilHealth YES Form v1.2 · UA-CLINIC-R3</p>
             </div>
           </div>
         </div>
@@ -1011,9 +833,8 @@ function Step4({ member, sigDataUrl, onDone }: {
 export default function EmpanelmentPage() {
   const [step,      setStep]      = useState(1);
   const [patient,   setPatient]   = useState<Member | null>(null);
-  const [sigDataUrl,setSigDataUrl] = useState('');
 
-  const reset = () => { setStep(1); setPatient(null); setSigDataUrl(''); };
+  const reset = () => { setStep(1); setPatient(null); };
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -1061,17 +882,6 @@ export default function EmpanelmentPage() {
         {step === 3 && patient && (
           <Step3
             member={patient}
-            onConsented={sig => {
-              setSigDataUrl(sig);
-              setStep(4);
-              toast.success('Informed consent recorded!');
-            }}
-          />
-        )}
-        {step === 4 && patient && (
-          <Step4
-            member={patient}
-            sigDataUrl={sigDataUrl}
             onDone={() => {
               reset();
               toast.success('Empanelment complete! Patient successfully enrolled in YAKAP.');
