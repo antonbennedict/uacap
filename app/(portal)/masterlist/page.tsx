@@ -68,7 +68,7 @@ export default function MasterlistPage() {
   };
 
   const toggleSelect = (id: string) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    setSelectedIds(prev => prev?.includes(id) ? prev.filter(i => i !== id) : [...(prev || []), id]);
   };
 
   const selectAll = () => {
@@ -137,11 +137,11 @@ export default function MasterlistPage() {
               <div className="space-y-1">
                 {logs.map((log, i) => (
                   <div key={i} className={`leading-tight animate-fade-in ${
-                    log.includes('[SYS]') ? 'text-blue-400' :
-                    log.includes('[NET]') ? 'text-cyan-400' :
-                    log.includes('[SEC]') ? 'text-emerald-400' :
-                    log.includes('[AUTH]') ? 'text-yellow-400' :
-                    log.includes('[DB]') ? 'text-purple-400' : 'text-gray-300'
+                    log?.includes('[SYS]') ? 'text-blue-400' :
+                    log?.includes('[NET]') ? 'text-cyan-400' :
+                    log?.includes('[SEC]') ? 'text-emerald-400' :
+                    log?.includes('[AUTH]') ? 'text-yellow-400' :
+                    log?.includes('[DB]') ? 'text-purple-400' : 'text-gray-300'
                   }`}>{log}</div>
                 ))}
                 {isConnecting && <div className="text-gray-500 animate-pulse">_</div>}
@@ -192,7 +192,7 @@ export default function MasterlistPage() {
                   <tr key={entry.id} className={entry.importedAt ? 'opacity-50' : ''}>
                     <td>
                       <input type="checkbox" disabled={!!entry.importedAt}
-                        checked={selectedIds.includes(entry.id)}
+                        checked={selectedIds?.includes(entry.id)}
                         onChange={() => toggleSelect(entry.id)} className="rounded" />
                     </td>
                     <td>

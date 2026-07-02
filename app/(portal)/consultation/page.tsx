@@ -411,8 +411,8 @@ function ConsultationContent() {
             <input type="text" value={memberSearch}
               onChange={e => { setMemberSearch(e.target.value); setMemberDropdownOpen(true); }}
               onFocus={() => setMemberDropdownOpen(true)}
-              placeholder="Search patient by name or PIN..." className="form-input pl-9" />
-            {memberDropdownOpen && memberSearch && (
+              placeholder="Search existing member by name or PIN..." className="form-input pl-9" />
+            {memberDropdownOpen && (
               <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
                 {filteredMembers.map(m => (
                   <button key={m.id} onClick={() => { setSelectedMember(m); setMemberSearch(`${m.firstName} ${m.lastName}`); setMemberDropdownOpen(false); }}
@@ -443,8 +443,8 @@ function ConsultationContent() {
                 <input type="text" value={memberSearch}
                   onChange={e => { setMemberSearch(e.target.value); setMemberDropdownOpen(true); }}
                   onFocus={() => setMemberDropdownOpen(true)}
-                  placeholder="Search patient by name or PIN..." className="form-input pl-9" />
-                {memberDropdownOpen && memberSearch && (
+                  placeholder="Search existing member by name or PIN..." className="form-input pl-9" />
+                {memberDropdownOpen && (
                   <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
                     {filteredMembers.map(m => (
                       <button key={m.id} onClick={() => { setSelectedMember(m); setMemberSearch(`${m.firstName} ${m.lastName}`); setMemberDropdownOpen(false); }}
@@ -1178,6 +1178,7 @@ function ConsultationContent() {
 
                 {/* P — Plan */}
                 {activeSoapTab === 'P' && (
+                  <>
                   <div className="card-glass p-5 space-y-6">
                     <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
                       <div className="w-7 h-7 rounded-lg bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-sm">4</div>
@@ -1395,6 +1396,7 @@ function ConsultationContent() {
                       </div>
                     </div>
                   </div>
+                  </>
                 )}
               </>
             )}

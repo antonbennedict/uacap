@@ -29,6 +29,7 @@ export default function FPEPage() {
     alcoholConsumption: 'Never' as 'Never' | 'Occasional' | 'Regular',
   });
   const [medicalHistory, setMedicalHistory] = useState('');
+  const [initialTrancheAmount, setInitialTrancheAmount] = useState('680');
 
   const currentFPE = selectedMember ? fpeRecords.find((fpe) => fpe.memberPin === selectedMember.philhealthPin) : null;
   const isDispatched = currentFPE?.status === 'Dispatched';
@@ -49,6 +50,7 @@ export default function FPEPage() {
       setVitalSigns({ heightCm: '', weightKg: '', bloodPressureSystolic: '', bloodPressureDiastolic: '', fastingBloodSugar: '' });
       setLifestyle({ smokingStatus: 'Never', alcoholConsumption: 'Never' });
       setMedicalHistory('');
+      setInitialTrancheAmount('680');
     }
   }, [currentFPE]);
 
@@ -98,6 +100,7 @@ export default function FPEPage() {
       },
       lifestyle,
       medicalHistory,
+      initialTrancheAmount: parseFloat(initialTrancheAmount),
       status: currentFPE?.status ?? 'Encoded',
       dispatchedAt: currentFPE?.dispatchedAt ?? null,
     };
@@ -151,7 +154,7 @@ export default function FPEPage() {
               placeholder="Search patient by name or PIN..."
               className="form-input pl-10"
             />
-            {memberDropdownOpen && memberSearch && (
+            {memberDropdownOpen && (
               <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
                 {filteredMembers.length === 0 ? (
                   <p className="px-4 py-3 text-sm text-gray-400">No members found.</p>
@@ -284,6 +287,22 @@ export default function FPEPage() {
                     className="form-input resize-none"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Circular 2024-0013 Compliance */}
+            <div className="card-glass p-6 space-y-5">
+              <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">PhilHealth Compliance (Circular 2024-0013)</h2>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Initial Tranche Amount (PHP)</label>
+                <input
+                  type="number"
+                  value={initialTrancheAmount}
+                  onChange={(e) => setInitialTrancheAmount(e.target.value)}
+                  disabled={isDispatched}
+                  className="form-input max-w-xs"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">40% capitation release upon successful FPE encoding.</p>
               </div>
             </div>
 

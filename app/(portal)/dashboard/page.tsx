@@ -7,16 +7,12 @@ import { useEffect } from 'react';
 import {
   LayoutDashboard, Users, Stethoscope, AlertTriangle,
   Clock, ChevronRight, Plus, Activity, ClipboardList, Wallet,
-  CheckCircle, Timer, UserCheck, Zap
+  CheckCircle, Timer, UserCheck, Zap, Download
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDateTime } from '@/lib/utils';
 import { getMedicineStatus } from '@/lib/types';
 import { toast } from 'sonner';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  BarChart, Bar
-} from 'recharts';
 
 
 const PHYSICIANS = [
@@ -35,10 +31,11 @@ export default function DashboardPage() {
   const fpeRecords: any[] = [];
   const prescriptions: any[] = [];
   const medicines: any[] = [];
-  const auditLog: any[] = [];
   const soapNotes: any[] = [];
   const addTriageEntry = (entry: any) => {};
   const updateTriageStatus = (id: string, status: string, physician?: string) => {};
+
+  const [auditLog, setAuditLog] = useState<any[]>([]);
 
   const [showAddTriage, setShowAddTriage] = useState(false);
   const [newEntry, setNewEntry] = useState({ memberSearch: '', complaint: '', priority: 'Normal' as TriagePriority });
@@ -59,15 +56,24 @@ export default function DashboardPage() {
         console.error('Failed to fetch members:', error);
       }
     }
+    
+    async function fetchLogs() {
+      try {
+        const response = await fetch('/api/audit-log');
+        const data = await response.json();
+        if (data.auditLog) {
+          setAuditLog(data.auditLog);
+        }
+      } catch (error) {}
+    }
     fetchMembers();
+    fetchLogs();
     
     // Fetch Zustand store dashboard metrics
     useAppStore.getState().fetchDashboardMetrics();
   }, []);
 
   const { dashboardMetrics } = useAppStore();
-  const activityData = dashboardMetrics?.activityData || [];
-  const formularyData = dashboardMetrics?.formularyData || [];
 
   // Metrics
   const waiting = triageEntries.filter(t => t.status === 'Waiting').length;
@@ -117,6 +123,9 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <a href="/api/members/export" download="philhealth_masterlist.csv" className="btn-secondary">
+            <Download className="w-4 h-4" /> Export CSV
+          </a>
           <button onClick={() => setShowAddTriage(true)} className="btn-primary">
             <Plus className="w-4 h-4" /> Triage Desk
           </button>
@@ -126,63 +135,46 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Stat Cards (Premium Glassmorphism) */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="card-stat border-b-4 border-amber-400">
-          <div className="flex justify-between items-start"><div><p className="text-xs text-gray-400 uppercase tracking-wider">Waiting</p><p className="text-3xl font-bold text-amber-500 mt-1">{waiting}</p></div><Timer className="w-5 h-5 text-amber-400" /></div>
+        <div className="card-glass relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="p-5 flex justify-between items-start border-l-4 border-amber-500">
+            <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Waiting</p><p className="text-3xl font-black text-gray-900 tracking-tight">{waiting}</p></div>
+            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shadow-inner group-hover:scale-110 transition-transform"><Timer className="w-5 h-5" /></div>
+          </div>
         </div>
-        <div className="card-stat border-b-4 border-blue-500">
-          <div className="flex justify-between items-start"><div><p className="text-xs text-gray-400 uppercase tracking-wider">In-Consult</p><p className="text-3xl font-bold text-blue-500 mt-1">{inConsult}</p></div><Stethoscope className="w-5 h-5 text-blue-400" /></div>
+        <div className="card-glass relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="p-5 flex justify-between items-start border-l-4 border-blue-500">
+            <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">In-Consult</p><p className="text-3xl font-black text-gray-900 tracking-tight">{inConsult}</p></div>
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 shadow-inner group-hover:scale-110 transition-transform"><Stethoscope className="w-5 h-5" /></div>
+          </div>
         </div>
-        <div className="card-stat border-b-4 border-emerald-500">
-          <div className="flex justify-between items-start"><div><p className="text-xs text-gray-400 uppercase tracking-wider">Completed</p><p className="text-3xl font-bold text-emerald-500 mt-1">{done}</p></div><CheckCircle className="w-5 h-5 text-emerald-400" /></div>
+        <div className="card-glass relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="p-5 flex justify-between items-start border-l-4 border-emerald-500">
+            <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Completed</p><p className="text-3xl font-black text-gray-900 tracking-tight">{done}</p></div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-inner group-hover:scale-110 transition-transform"><CheckCircle className="w-5 h-5" /></div>
+          </div>
         </div>
-        <div className="card-stat border-b-4 border-purple-500">
-          <div className="flex justify-between items-start"><div><p className="text-xs text-gray-400 uppercase tracking-wider">Consultations</p><p className="text-3xl font-bold text-purple-500 mt-1">{soapNotes.length}</p></div><ClipboardList className="w-5 h-5 text-purple-400" /></div>
+        <div className="card-glass relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="p-5 flex justify-between items-start border-l-4 border-purple-500">
+            <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Records</p><p className="text-3xl font-black text-gray-900 tracking-tight">{soapNotes.length}</p></div>
+            <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500 shadow-inner group-hover:scale-110 transition-transform"><ClipboardList className="w-5 h-5" /></div>
+          </div>
         </div>
-        <div className="card-stat border-b-4 border-red-400">
-          <div className="flex justify-between items-start"><div><p className="text-xs text-gray-400 uppercase tracking-wider">Stock Alerts</p><p className="text-3xl font-bold text-red-500 mt-1">{lowStock}</p></div><AlertTriangle className="w-5 h-5 text-red-400" /></div>
+        <div className="card-glass relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="p-5 flex justify-between items-start border-l-4 border-red-500">
+            <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Stock Alerts</p><p className="text-3xl font-black text-gray-900 tracking-tight">{lowStock}</p></div>
+            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500 shadow-inner group-hover:scale-110 transition-transform"><AlertTriangle className="w-5 h-5" /></div>
+          </div>
         </div>
       </div>
 
-      {/* Analytics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card-glass p-5">
-          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2"><Activity className="w-4 h-4 text-gray-400" /> Patient Influx / Activity</h2>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={activityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorPatients" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#004B87" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#004B87" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
-                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Area type="monotone" dataKey="patients" stroke="#004B87" strokeWidth={3} fillOpacity={1} fill="url(#colorPatients)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
-        <div className="card-glass p-5">
-          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-gray-400" /> GAMOT Formulary Utilization</h2>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={formularyData} layout="vertical" margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#1E293B', fontWeight: 500 }} />
-                <RechartsTooltip cursor={{ fill: '#F1F5F9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="prescribed" fill="#004B87" radius={[0, 4, 4, 0]} barSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Triage Queue */}
@@ -197,36 +189,52 @@ export default function DashboardPage() {
           ) : (
             <div className="overflow-hidden rounded-xl border border-gray-100">
               <table className="data-table">
-                <thead><tr><th>Patient</th><th>Chief Complaint</th><th>Priority</th><th>Status</th><th>Physician</th><th>Actions</th></tr></thead>
-                <tbody>
+                <thead className="bg-slate-50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold rounded-tl-xl text-left">Patient</th>
+                    <th className="px-4 py-3 font-semibold text-left">Chief Complaint</th>
+                    <th className="px-4 py-3 font-semibold text-left">Priority</th>
+                    <th className="px-4 py-3 font-semibold text-left">Status</th>
+                    <th className="px-4 py-3 font-semibold text-left">Physician</th>
+                    <th className="px-4 py-3 font-semibold text-right rounded-tr-xl">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
                   {triageEntries.map(entry => (
-                    <tr key={entry.id}>
-                      <td>
-                        <p className="font-semibold text-sm text-gray-900">{entry.memberName}</p>
-                        <p className="text-xs font-mono text-gray-400">{entry.memberPin}</p>
-                        <p className="text-xs text-gray-400">{new Date(entry.arrivalTime).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}</p>
+                    <tr key={entry.id} className="hover:bg-blue-50/40 transition-colors group">
+                      <td className="px-4 py-3">
+                        <p className="font-bold text-sm text-gray-900">{entry.memberName}</p>
+                        <p className="text-xs font-mono text-blue-600 font-medium">{entry.memberPin}</p>
+                        <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{new Date(entry.arrivalTime).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
                       </td>
-                      <td className="text-sm text-gray-700 max-w-[160px]">{entry.chiefComplaint}</td>
-                      <td>
-                        <span className={`badge border text-xs ${PRIORITY_COLORS[entry.priority as TriagePriority]}`}>{entry.priority}</span>
+                      <td className="px-4 py-3 text-sm text-gray-700 max-w-[160px] truncate">{entry.chiefComplaint}</td>
+                      <td className="px-4 py-3">
+                        <span className={`badge border text-[10px] uppercase font-bold tracking-wider px-2 py-1 ${PRIORITY_COLORS[entry.priority as TriagePriority]}`}>
+                          {entry.priority}
+                        </span>
                       </td>
-                      <td>
+                      <td className="px-4 py-3">
                         <select
                           value={entry.status}
                           onChange={(e) => updateTriageStatus(entry.id, e.target.value as any, entry.assignedPhysician || undefined)}
-                          className={`text-xs border rounded-lg px-2 py-1 font-medium ${
-                            entry.status === 'Waiting' ? 'text-amber-600 bg-amber-50 border-amber-200' :
-                            entry.status === 'In-Consult' ? 'text-blue-600 bg-blue-50 border-blue-200' :
-                            entry.status === 'Done' ? 'text-emerald-600 bg-emerald-50 border-emerald-200' :
+                          className={`text-xs border rounded-lg px-2 py-1.5 font-bold cursor-pointer transition-colors focus:ring-2 focus:ring-blue-500/20 focus:outline-none ${
+                            entry.status === 'Waiting' ? 'text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100' :
+                            entry.status === 'In-Consult' ? 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100' :
+                            entry.status === 'Done' ? 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100' :
                             'text-gray-600 bg-gray-50 border-gray-200'
                           }`}
                         >
-                          {['Waiting', 'In-Consult', 'Done', 'Referred'].map(s => <option key={s}>{s}</option>)}
+                          {['Waiting', 'In-Consult', 'Done', 'Referred'].map(s => <option key={s} className="bg-white text-gray-900">{s}</option>)}
                         </select>
                       </td>
-                      <td className="text-xs text-gray-600">{entry.assignedPhysician || <span className="text-gray-300">Unassigned</span>}</td>
-                      <td>
-                        <Link href={`/consultation?pin=${entry.memberPin}`} className="text-xs text-philgreen hover:underline font-medium flex items-center gap-0.5">
+                      <td className="px-4 py-3 text-xs text-gray-600 font-medium">
+                        {entry.assignedPhysician || <span className="text-gray-300 italic">Unassigned</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link href={`/consultation?pin=${entry.memberPin}`} className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-2 py-1.5 rounded-lg transition-colors font-semibold">
                           Consult <ChevronRight className="w-3 h-3" />
                         </Link>
                       </td>
@@ -280,17 +288,31 @@ export default function DashboardPage() {
 
           {/* Recent Activity */}
           <div className="card-glass p-5">
-            <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-gray-400" /> Recent Activity</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2"><Clock className="w-4 h-4 text-gray-400" /> Recent Activity</h2>
+              <Link href="/audit-log" className="text-[10px] uppercase tracking-widest font-bold text-blue-600 hover:text-blue-800 transition-colors">View All</Link>
+            </div>
             <div className="space-y-3">
-              {auditLog.slice(0, 4).map(log => (
-                <div key={log.id} className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 mt-2 rounded-full bg-philgreen flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-700 leading-snug line-clamp-2">{log.description}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{formatDateTime(log.timestamp)}</p>
+              {auditLog.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">No recent activity.</p>
+              ) : (
+                auditLog.slice(0, 5).map(log => (
+                  <div key={log.id} className="flex items-start gap-3 p-2 hover:bg-slate-50 rounded-lg transition-colors group">
+                    <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${
+                      log.actionType.includes('CREATE') ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
+                      log.actionType.includes('DELETE') ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
+                      'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-800 leading-snug line-clamp-2 group-hover:text-blue-900 transition-colors">{log.description}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-medium text-gray-500">{log.actor}</span>
+                        <span className="text-[10px] text-gray-400">• {formatDateTime(log.timestamp)}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -312,7 +334,7 @@ export default function DashboardPage() {
                   placeholder="Search by name or PIN..."
                   className="form-input"
                 />
-                {memberDropdown && memberSearch && (
+                {memberDropdown && (
                   <div className="absolute z-10 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-40 overflow-y-auto">
                     {filteredMembers.slice(0, 6).map(m => (
                       <button key={m.id} onClick={() => { setSelectedMember(m); setMemberSearch(`${m.firstName} ${m.lastName}`); setMemberDropdown(false); }}

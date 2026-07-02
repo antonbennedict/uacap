@@ -168,7 +168,7 @@ export default function LabResultsPage() {
                 onChange={e => { setMemberSearch(e.target.value); setMemberDropdownOpen(true); }}
                 onFocus={() => setMemberDropdownOpen(true)}
                 placeholder="Search patient..." className="form-input pl-9" />
-              {memberDropdownOpen && memberSearch && (
+              {memberDropdownOpen && (
                 <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
                   {filteredMembers.map(m => (
                     <button key={m.id} onClick={() => { setSelectedMember(m); setMemberSearch(`${m.firstName} ${m.lastName}`); setMemberDropdownOpen(false); }}

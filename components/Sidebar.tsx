@@ -7,7 +7,7 @@ import {
   UserCheck, Activity, Heart,
   ChevronRight, Bell, Settings, LogOut, Stethoscope,
   LayoutDashboard, Server, FlaskConical, ClipboardList, Users,
-  Shield, ClipboardCheck
+  Shield, ClipboardCheck, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -80,6 +80,13 @@ const navGroups = [
         icon: Server,
         description: 'Transmittal portal',
         color: '#EC4899',
+      },
+      {
+        href: '/reports',
+        label: 'Reports & Database',
+        icon: Activity,
+        description: 'Live charts & records',
+        color: '#F59E0B',
       },
     ],
   },
@@ -195,13 +202,12 @@ export default function Sidebar() {
 
       {/* Bottom actions */}
       <div className="border-t border-white/10 p-3 space-y-0.5">
-        <div className="sidebar-nav-link cursor-pointer group">
+        <Link href="/audit-log" className="sidebar-nav-link cursor-pointer group block">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-white/10">
-            <Bell className="w-4 h-4" />
+            <Clock className="w-4 h-4" />
           </div>
-          <span className="text-sm flex-1">Notifications</span>
-          <span className="ml-auto text-xs bg-emerald-500 text-white rounded-full px-2 py-0.5 font-bold">3</span>
-        </div>
+          <span className="text-sm flex-1">Audit Log</span>
+        </Link>
         <Link href="/settings" className="sidebar-nav-link cursor-pointer group block">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-white/10">
             <Settings className="w-4 h-4" />

@@ -40,6 +40,15 @@ export default function EligibilityPage() {
   const [results, setResults] = useState<Member[]>([]);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const filteredSuggestions = allMembers.filter((m) => {
+    const searchTerms = query.toLowerCase().trim();
+    if (!searchTerms) return true;
+    const fullName = `${m.firstName} ${m.middleName || ''} ${m.lastName}`.toLowerCase();
+    const pin = m.philhealthPin.toLowerCase();
+    return fullName.includes(searchTerms) || pin.includes(searchTerms);
+  });
 
   useEffect(() => {
     async function fetchMembers() {
@@ -155,11 +164,36 @@ export default function EligibilityPage() {
               id="eligibility-search"
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); setIsDropdownOpen(true); }}
+              onFocus={() => setIsDropdownOpen(true)}
               onKeyDown={handleKeyDown}
               placeholder="Enter PhilHealth PIN (e.g., 01-234567890-1) or full name..."
               className="form-input pl-10 pr-10"
             />
+            {isDropdownOpen && (
+              <div className="absolute z-50 top-full mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
+                {filteredSuggestions.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-gray-400">No members found.</p>
+                ) : (
+                  filteredSuggestions.slice(0, 8).map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => {
+                        setQuery(`${m.firstName} ${m.lastName}`);
+                        setIsDropdownOpen(false);
+                        setSelectedMember(m);
+                        setResults([m]);
+                        setHasSearched(true);
+                      }}
+                      className="w-full flex justify-between px-4 py-3 hover:bg-slate-50 text-left border-b border-gray-50 text-sm"
+                    >
+                      <span className="font-medium">{m.firstName} {m.lastName}</span>
+                      <span className="font-mono text-gray-400 text-xs">{m.philhealthPin}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
             {query && (
               <button
                 onClick={handleClear}

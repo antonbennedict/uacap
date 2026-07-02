@@ -108,6 +108,32 @@ function Step1({
   const [loading,  setLoading]  = useState(false);
   const [searched, setSearched] = useState(false);
   const [picked,   setPicked]   = useState<Member | null>(null);
+  
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchMembers() {
+      try {
+        const response = await fetch('/api/members');
+        const data = await response.json();
+        if (data.members) {
+          setAllMembers(data.members);
+        }
+      } catch (error) {
+        console.error('Failed to fetch members:', error);
+      }
+    }
+    fetchMembers();
+  }, []);
+
+  const filteredSuggestions = allMembers.filter((m) => {
+    const searchTerms = query.toLowerCase().trim();
+    if (!searchTerms) return true;
+    const fullName = `${m.firstName} ${m.middleName || ''} ${m.lastName}`.toLowerCase();
+    const pin = m.philhealthPin.toLowerCase();
+    return fullName.includes(searchTerms) || pin.includes(searchTerms);
+  });
 
   const doSearch = useCallback(async () => {
     const q = query.trim();
@@ -149,9 +175,34 @@ function Step1({
             className="form-input pl-9"
             placeholder="e.g. 09-123456789-0 or Juan Dela Cruz"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => { setQuery(e.target.value); setIsDropdownOpen(true); }}
+            onFocus={() => setIsDropdownOpen(true)}
             onKeyDown={e => e.key === 'Enter' && doSearch()}
           />
+          {isDropdownOpen && (
+            <div className="absolute z-50 top-full mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
+              {filteredSuggestions.length === 0 ? (
+                <p className="px-4 py-3 text-sm text-gray-400">No members found.</p>
+              ) : (
+                filteredSuggestions.slice(0, 8).map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      setQuery(`${m.firstName} ${m.lastName}`);
+                      setIsDropdownOpen(false);
+                      setPicked(m);
+                      setResults([m]);
+                      setSearched(true);
+                    }}
+                    className="w-full flex justify-between px-4 py-3 hover:bg-blue-50 text-left border-b border-gray-50 text-sm"
+                  >
+                    <span className="font-medium">{m.firstName} {m.lastName}</span>
+                    <span className="font-mono text-gray-400 text-xs">{m.philhealthPin}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
         <button id="empanelment-search-btn"
           onClick={doSearch}
