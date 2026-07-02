@@ -80,10 +80,10 @@ export default function ReportsPage() {
         const pData = await patientsRes.json();
         const mData = await metricsRes.json();
 
-        if (isMounted && pData.patients) {
-          setPatients(pData.patients);
-          setTotalRecords(pData.total || 0);
-          setTotalPages(pData.totalPages || 1);
+        if (isMounted && pData.data) {
+          setPatients(pData.data);
+          setTotalRecords(pData.meta?.total || 0);
+          setTotalPages(pData.meta?.totalPages || 1);
         }
         
         if (isMounted && mData) {
