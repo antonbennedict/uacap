@@ -1,35 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import medicinesData from '@/lib/data/medicines.json';
-import type { Medicine } from '@/lib/types';
-
-// In-memory store for server-side mutations (seed on first access)
-let medicines: Medicine[] = medicinesData as Medicine[];
+import prisma from '@/lib/prisma';
 
 export async function GET() {
-  return NextResponse.json({ medicines });
+  try {
+    const medicines = await prisma.medicine.findMany();
+    return NextResponse.json({ medicines });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: NextRequest) {
-  const body = await request.json();
-  const { medicineId, action, quantity } = body as {
-    medicineId: string;
-    action: 'restock' | 'deduct';
-    quantity: number;
-  };
+  try {
+    const body = await request.json();
+    const { medicineId, action, quantity } = body as {
+      medicineId: string;
+      action: 'restock' | 'deduct';
+      quantity: number;
+    };
 
-  const idx = medicines.findIndex((m) => m.id === medicineId);
-  if (idx === -1) {
-    return NextResponse.json({ error: 'Medicine not found' }, { status: 404 });
+    const medicine = await prisma.$transaction(async (tx) => {
+      const currentMed = await tx.medicine.findUnique({
+        where: { id: medicineId },
+      });
+
+      if (!currentMed) {
+        throw new Error('Medicine not found');
+      }
+
+      let newQuantity = currentMed.quantity;
+      if (action === 'restock') {
+        newQuantity += quantity;
+      } else if (action === 'deduct') {
+        if (currentMed.quantity < quantity) {
+          throw new Error('Insufficient stock');
+        }
+        newQuantity -= quantity;
+      }
+
+      return await tx.medicine.update({
+        where: { id: medicineId },
+        data: { quantity: newQuantity },
+      });
+    });
+
+    return NextResponse.json({ medicine });
+  } catch (error: any) {
+    const status = error.message === 'Medicine not found' || error.message === 'Insufficient stock' ? 400 : 500;
+    return NextResponse.json({ error: error.message }, { status });
   }
-
-  if (action === 'restock') {
-    medicines[idx] = { ...medicines[idx], currentStock: medicines[idx].currentStock + quantity };
-  } else if (action === 'deduct') {
-    if (medicines[idx].currentStock < quantity) {
-      return NextResponse.json({ error: 'Insufficient stock' }, { status: 400 });
-    }
-    medicines[idx] = { ...medicines[idx], currentStock: medicines[idx].currentStock - quantity };
-  }
-
-  return NextResponse.json({ medicine: medicines[idx] });
 }

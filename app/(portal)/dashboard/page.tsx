@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/lib/store';
-import membersData from '@/lib/data/members.json';
 import type { Member, TriagePriority } from '@/lib/types';
+import { useEffect } from 'react';
 import {
   LayoutDashboard, Users, Stethoscope, AlertTriangle,
   Clock, ChevronRight, Plus, Activity, ClipboardList, Wallet,
@@ -13,8 +13,11 @@ import Link from 'next/link';
 import { formatDateTime } from '@/lib/utils';
 import { getMedicineStatus } from '@/lib/types';
 import { toast } from 'sonner';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  BarChart, Bar
+} from 'recharts';
 
-const allMembers: Member[] = membersData as Member[];
 
 const PHYSICIANS = [
   'Dr. Rosa Lim, MD', 'Dr. Pedro Ocampo, MD, FPCP',
@@ -28,21 +31,51 @@ const PRIORITY_COLORS: Record<TriagePriority, string> = {
 };
 
 export default function DashboardPage() {
-  const { triageEntries, fpeRecords, prescriptions, medicines, auditLog, soapNotes, addTriageEntry, updateTriageStatus } = useAppStore();
+  const triageEntries: any[] = [];
+  const fpeRecords: any[] = [];
+  const prescriptions: any[] = [];
+  const medicines: any[] = [];
+  const auditLog: any[] = [];
+  const soapNotes: any[] = [];
+  const addTriageEntry = (entry: any) => {};
+  const updateTriageStatus = (id: string, status: string, physician?: string) => {};
 
   const [showAddTriage, setShowAddTriage] = useState(false);
   const [newEntry, setNewEntry] = useState({ memberSearch: '', complaint: '', priority: 'Normal' as TriagePriority });
   const [memberSearch, setMemberSearch] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [memberDropdown, setMemberDropdown] = useState(false);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
+
+  useEffect(() => {
+    async function fetchMembers() {
+      try {
+        const response = await fetch('/api/members');
+        const data = await response.json();
+        if (data.members) {
+          setAllMembers(data.members);
+        }
+      } catch (error) {
+        console.error('Failed to fetch members:', error);
+      }
+    }
+    fetchMembers();
+    
+    // Fetch Zustand store dashboard metrics
+    useAppStore.getState().fetchDashboardMetrics();
+  }, []);
+
+  const { dashboardMetrics } = useAppStore();
+  const activityData = dashboardMetrics?.activityData || [];
+  const formularyData = dashboardMetrics?.formularyData || [];
 
   // Metrics
   const waiting = triageEntries.filter(t => t.status === 'Waiting').length;
   const inConsult = triageEntries.filter(t => t.status === 'In-Consult').length;
   const done = triageEntries.filter(t => t.status === 'Done').length;
-  const lowStock = medicines.filter(m => getMedicineStatus(m.currentStock) === 'Low' || getMedicineStatus(m.currentStock) === 'Out of Stock').length;
-  const totalCapitation = allMembers.reduce((s, m) => s + m.yakapBenefit.totalAllotment, 0);
-  const usedCapitation = allMembers.reduce((s, m) => s + m.yakapBenefit.usedAmount, 0);
+  const lowStock = medicines.filter(m => getMedicineStatus(m.quantity) === 'Low' || getMedicineStatus(m.quantity) === 'Out of Stock').length;
+  const totalCapitation = allMembers.reduce((s, m) => s + ((m as any).yakapBenefit?.totalAllotment ?? 0), 0);
+  const usedCapitation = allMembers.reduce((s, m) => s + ((m as any).yakapBenefit?.usedAmount ?? 0), 0);
 
   const filteredMembers = allMembers.filter(m => {
     const q = memberSearch.toLowerCase();
@@ -61,7 +94,7 @@ export default function DashboardPage() {
       priority: newEntry.priority,
       status: 'Waiting',
       assignedPhysician: '',
-      clinicId: selectedMember.registeredClinicId,
+      clinicId: 'DEFAULT_CLINIC',
     });
     setShowAddTriage(false);
     setSelectedMember(null);
@@ -112,6 +145,45 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card-glass p-5">
+          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2"><Activity className="w-4 h-4 text-gray-400" /> Patient Influx / Activity</h2>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={activityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPatients" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#004B87" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#004B87" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
+                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Area type="monotone" dataKey="patients" stroke="#004B87" strokeWidth={3} fillOpacity={1} fill="url(#colorPatients)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        <div className="card-glass p-5">
+          <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-gray-400" /> GAMOT Formulary Utilization</h2>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={formularyData} layout="vertical" margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#1E293B', fontWeight: 500 }} />
+                <RechartsTooltip cursor={{ fill: '#F1F5F9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="prescribed" fill="#004B87" radius={[0, 4, 4, 0]} barSize={24} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Triage Queue */}
         <div className="xl:col-span-2 card-glass p-5">
@@ -136,7 +208,7 @@ export default function DashboardPage() {
                       </td>
                       <td className="text-sm text-gray-700 max-w-[160px]">{entry.chiefComplaint}</td>
                       <td>
-                        <span className={`badge border text-xs ${PRIORITY_COLORS[entry.priority]}`}>{entry.priority}</span>
+                        <span className={`badge border text-xs ${PRIORITY_COLORS[entry.priority as TriagePriority]}`}>{entry.priority}</span>
                       </td>
                       <td>
                         <select

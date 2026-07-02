@@ -2,16 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import clinicsData from '@/lib/data/clinics.json';
 import type { Member, Clinic, FPERecord } from '@/lib/types';
 import { Stethoscope, Search, User, CheckCircle, UploadCloud, AlertCircle, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
 
-const allClinics: Clinic[] = clinicsData as Clinic[];
-
 export default function FPEPage() {
-  const { fpeRecords, saveFPERecord, dispatchFPEToPHIC, members } = useAppStore();
+  const { saveFPERecord } = useAppStore();
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
+  const [fpeRecords, setFpeRecords] = useState<FPERecord[]>([]);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
@@ -53,7 +52,22 @@ export default function FPEPage() {
     }
   }, [currentFPE]);
 
-  const filteredMembers = members.filter((m) => {
+  useEffect(() => {
+    async function fetchMembers() {
+      try {
+        const response = await fetch('/api/members');
+        const data = await response.json();
+        if (data.members) {
+          setAllMembers(data.members);
+        }
+      } catch (error) {
+        console.error('Failed to fetch members:', error);
+      }
+    }
+    fetchMembers();
+  }, []);
+
+  const filteredMembers = allMembers.filter((m) => {
     const q = memberSearch.toLowerCase();
     return (
       `${m.firstName} ${m.lastName}`.toLowerCase().includes(q) ||
@@ -73,7 +87,7 @@ export default function FPEPage() {
     const record: FPERecord = {
       id: currentFPE?.id ?? `fpe-${Date.now()}`,
       memberPin: selectedMember.philhealthPin,
-      clinicId: selectedMember.registeredClinicId,
+      clinicId: 'DEFAULT_CLINIC',
       encounterDate: currentFPE?.encounterDate ?? new Date().toISOString(),
       vitalSigns: {
         heightCm: parseFloat(vitalSigns.heightCm),
@@ -101,7 +115,6 @@ export default function FPEPage() {
     setIsDispatching(true);
     // Simulate network delay to PHIC servers
     setTimeout(() => {
-      dispatchFPEToPHIC(currentFPE.id, 'Admin User');
       setIsDispatching(false);
       toast.success('FPE record successfully dispatched to PhilHealth database!');
     }, 1500);

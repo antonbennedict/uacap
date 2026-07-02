@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { formatDateTime } from '@/lib/utils';
 import { History, ChevronDown, ChevronUp, RefreshCw, FileText, Package, LogIn, CheckCircle, TrendingDown } from 'lucide-react';
@@ -32,8 +32,16 @@ const actionLabels: Record<string, string> = {
 };
 
 export default function AuditLog() {
-  const { auditLog } = useAppStore();
+  const [auditLog, setAuditLog] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  // Fetch true database audit records
+  useEffect(() => {
+    fetch('/api/audit-log')
+      .then(res => res.json())
+      .then(data => setAuditLog(data.auditLog || []))
+      .catch(console.error);
+  }, []);
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<string>('All');
 

@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import MemberCard from '@/components/MemberCard';
-import ClinicLocationCard from '@/components/ClinicLocationCard';
+import ClinicMap from '@/components/ClinicMap';
 import type { Member, Clinic } from '@/lib/types';
-import clinicsData from '@/lib/data/clinics.json';
-import { useAppStore } from '@/lib/store';
-import { Search, X, UserCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, X, UserCheck, AlertCircle, Loader2, ChevronDown, Users } from 'lucide-react';
+import * as Accordion from '@radix-ui/react-accordion';
 import { toast } from 'sonner';
 
-const clinics: Clinic[] = clinicsData as Clinic[];
+const clinics: Clinic[] = []; // Replaced mock clinics data
 
 function SkeletonCard() {
   return (
@@ -35,16 +34,29 @@ function SkeletonCard() {
 }
 
 export default function EligibilityPage() {
-  const { members } = useAppStore();
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<Member[]>([]);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const selectedClinic = selectedMember
-    ? clinics.find((c) => c.id === selectedMember.registeredClinicId) ?? null
-    : null;
+  useEffect(() => {
+    async function fetchMembers() {
+      try {
+        const response = await fetch('/api/members');
+        const data = await response.json();
+        if (data.members) {
+          setAllMembers(data.members);
+        }
+      } catch (error) {
+        console.error('Failed to fetch members:', error);
+      }
+    }
+    fetchMembers();
+  }, []);
+
+  const selectedClinic = null;
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) {
@@ -62,7 +74,7 @@ export default function EligibilityPage() {
 
       const searchTerms = query.trim().toLowerCase();
       
-      const foundMembers = members.filter((m) => {
+      const foundMembers = allMembers.filter((m) => {
         const fullName = `${m.firstName} ${m.middleName} ${m.lastName}`.toLowerCase();
         const pin = m.philhealthPin.toLowerCase();
         return fullName.includes(searchTerms) || pin.includes(searchTerms) ||
@@ -86,7 +98,7 @@ export default function EligibilityPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [query]);
+  }, [query, allMembers]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSearch();
@@ -117,11 +129,11 @@ export default function EligibilityPage() {
         <div className="mt-4 flex gap-3 flex-wrap">
           <div className="card-stat flex-1 min-w-[140px]">
             <p className="text-xs text-gray-400 uppercase tracking-wider">Members Enrolled</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{members.length}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{allMembers.length}</p>
           </div>
           <div className="card-stat flex-1 min-w-[140px]">
             <p className="text-xs text-gray-400 uppercase tracking-wider">Active Members</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{members.filter(m => m.membershipStatus === 'Active').length}</p>
+            <p className="text-2xl font-bold text-emerald-600 mt-1">{allMembers.length}</p>
           </div>
           <div className="card-stat flex-1 min-w-[140px]">
             <p className="text-xs text-gray-400 uppercase tracking-wider">Lapsed Members</p>
@@ -179,37 +191,83 @@ export default function EligibilityPage() {
         </p>
       </div>
 
-      {/* Multiple results list */}
+      {/* Multiple results list with Radix Accordion */}
       {hasSearched && results.length > 1 && !selectedMember && (
         <div className="card-glass p-4 mb-6 animate-fade-in">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            {results.length} Members Found — Select a member:
+            {results.length} Members Found — Select a member or expand to view dependents:
           </h3>
-          <div className="space-y-2">
+          <Accordion.Root type="single" collapsible className="space-y-2">
             {results.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setSelectedMember(m)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-philgreen hover:bg-emerald-50/30 transition-all text-left group"
-              >
-                <div>
-                  <p className="font-semibold text-gray-900 text-sm group-hover:text-philgreen-700 transition-colors">
-                    {m.firstName} {m.middleName} {m.lastName}{m.suffix ? ` ${m.suffix}` : ''}
-                  </p>
-                  <p className="text-xs font-mono text-gray-400 mt-0.5">{m.philhealthPin}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`badge ${
-                      m.membershipStatus === 'Active' ? 'badge-green' : 'badge-yellow'
-                    }`}
-                  >
-                    {m.membershipStatus}
-                  </span>
-                </div>
-              </button>
+              <Accordion.Item key={m.id} value={m.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#004B87]/50 focus-within:border-[#004B87]">
+                <Accordion.Header className="flex">
+                  <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-all text-left group">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900 text-sm group-hover:text-[#004B87] transition-colors">
+                          {m.firstName} {m.middleName} {m.lastName}{m.extension ? ` ${m.extension}` : ''}
+                        </p>
+                        {m.clientType === 'DEPENDENT' && (
+                          <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold uppercase">Dependent</span>
+                        )}
+                      </div>
+                      <p className="text-xs font-mono text-gray-400 mt-0.5">{m.philhealthPin}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="badge badge-green">
+                        Active
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-gray-400 transition-transform duration-300 ease-[cubic-bezier(0.87,_0,_0.13,_1)] group-data-[state=open]:rotate-180" aria-hidden />
+                    </div>
+                  </Accordion.Trigger>
+                </Accordion.Header>
+                <Accordion.Content className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down bg-slate-50/50">
+                  <div className="px-4 py-3 border-t border-gray-100">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5" /> Declared Dependents
+                      </p>
+                      <button
+                        onClick={() => setSelectedMember(m)}
+                        className="text-xs bg-[#004B87] hover:bg-[#003666] text-white px-3 py-1.5 rounded-md font-medium transition-colors shadow-sm"
+                      >
+                        View Full Record
+                      </button>
+                    </div>
+                    
+                    {(!m.dependents || m.dependents.length === 0) ? (
+                      <p className="text-sm text-slate-400 italic py-2">No registered dependents found for this member.</p>
+                    ) : (
+                      <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
+                        <table className="w-full text-left text-sm text-slate-600">
+                          <thead className="bg-slate-50/80 border-b border-slate-200">
+                            <tr>
+                              <th className="px-3 py-2 font-semibold">Full Name</th>
+                              <th className="px-3 py-2 font-semibold">Relationship</th>
+                              <th className="px-3 py-2 font-semibold">Sex</th>
+                              <th className="px-3 py-2 font-semibold">Date of Birth</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {m.dependents.map(dep => (
+                              <tr key={dep.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-3 py-2 font-medium text-slate-800">{dep.fullName}</td>
+                                <td className="px-3 py-2 text-xs">
+                                  <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">{dep.relationship}</span>
+                                </td>
+                                <td className="px-3 py-2">{dep.sex}</td>
+                                <td className="px-3 py-2 font-mono text-xs">{new Date(dep.dateOfBirth).toLocaleDateString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </Accordion.Content>
+              </Accordion.Item>
             ))}
-          </div>
+          </Accordion.Root>
         </div>
       )}
 
@@ -238,7 +296,7 @@ export default function EligibilityPage() {
       {selectedMember && !isLoading && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 animate-fade-in">
           <MemberCard member={selectedMember} />
-          {selectedClinic && <ClinicLocationCard clinic={selectedClinic} />}
+          <ClinicMap />
         </div>
       )}
 

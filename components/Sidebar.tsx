@@ -112,13 +112,12 @@ export default function Sidebar() {
     <aside className="sidebar flex-shrink-0" style={{ boxShadow: '2px 0 20px rgba(0,0,0,0.2)' }}>
       {/* Logo */}
       <div className="sidebar-logo">
-        <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
-          style={{ background: 'linear-gradient(135deg, #00843D, #006b32)' }}>
-          <Heart className="w-5 h-5 text-white fill-white" />
+        <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm overflow-hidden bg-white/10 border border-white/20">
+          <img src="/ua-logo.png" alt="UA Logo" className="w-8 h-8 object-contain" />
         </div>
         <div>
           <h1 className="text-white font-bold text-base leading-tight">UACAP</h1>
-          <p className="text-white/50 text-xs leading-tight">PhilHealth EMR Portal</p>
+          <p className="text-white/50 text-[10px] leading-tight uppercase tracking-wider mt-0.5">University of the Assumption</p>
         </div>
       </div>
 
@@ -130,7 +129,7 @@ export default function Sidebar() {
         }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #00843D, #1D4ED8)' }}>
+              style={{ background: 'linear-gradient(135deg, #004B87, #002D51)' }}>
               {userInitials}
             </div>
             <div className="flex-1 min-w-0">
@@ -203,12 +202,12 @@ export default function Sidebar() {
           <span className="text-sm flex-1">Notifications</span>
           <span className="ml-auto text-xs bg-emerald-500 text-white rounded-full px-2 py-0.5 font-bold">3</span>
         </div>
-        <div className="sidebar-nav-link cursor-pointer group">
+        <Link href="/settings" className="sidebar-nav-link cursor-pointer group block">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-white/10">
             <Settings className="w-4 h-4" />
           </div>
           <span className="text-sm">Settings</span>
-        </div>
+        </Link>
         <button
           onClick={handleLogout}
           className="sidebar-nav-link w-full text-left group"

@@ -1,13 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/dashboard',
-        permanent: false,
-      },
-    ]
+    return []
   },
   webpack: (config, { dev }) => {
     if (dev) {
@@ -23,7 +17,8 @@ const nextConfig = {
       }
     }
     return config;
-  }
+  },
+  turbopack: {},
 }
 
-module.exports = nextConfig
+export default nextConfig;

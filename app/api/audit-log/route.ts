@@ -1,22 +1,31 @@
 import { NextResponse } from 'next/server';
-import auditLogData from '@/lib/data/audit-log.json';
+import prisma from '@/lib/prisma';
 import type { AuditLogEntry } from '@/lib/types';
 
-let auditLog: AuditLogEntry[] = (auditLogData as unknown as AuditLogEntry[]).sort(
-  (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-);
-
 export async function GET() {
-  return NextResponse.json({ auditLog });
+  try {
+    const auditLog = await prisma.auditLog.findMany({
+      orderBy: { timestamp: 'desc' },
+      take: 100, // Limit to recent logs
+    });
+    return NextResponse.json({ auditLog });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const entry: AuditLogEntry = {
-    ...body,
-    id: `audit-server-${Date.now()}`,
-    timestamp: new Date().toISOString(),
-  };
-  auditLog = [entry, ...auditLog];
-  return NextResponse.json({ entry }, { status: 201 });
+  try {
+    const body = await request.json();
+    const entry = await prisma.auditLog.create({
+      data: {
+        actionType: body.actionType || 'UNKNOWN',
+        description: body.description || '',
+        actor: body.actor || 'System',
+      }
+    });
+    return NextResponse.json({ entry }, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

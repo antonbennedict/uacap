@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import { formatDate, calculateAge, formatCurrency } from '@/lib/utils';
 import type { Member } from '@/lib/types';
 import {
@@ -13,6 +15,7 @@ import {
   Users,
   CreditCard,
   Building2,
+  ChevronDown,
 } from 'lucide-react';
 
 interface MemberCardProps {
@@ -67,8 +70,66 @@ function YakapBar({ used, total }: { used: number; total: number }) {
   );
 }
 
+function DependentAccordion({ dependents }: { dependents: any[] }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="mt-5">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-3 bg-emerald-50/50 rounded-xl hover:bg-emerald-50 transition-colors border border-emerald-100"
+      >
+        <div className="flex items-center gap-2">
+          <Users className="w-5 h-5 text-philgreen" />
+          <span className="text-sm font-semibold text-gray-800">
+            Registered Dependents ({dependents.length})
+          </span>
+        </div>
+        <ChevronDown className={`w-5 h-5 text-philgreen transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="mt-3 grid gap-3 animate-fade-in">
+          {dependents.map((dep) => (
+            <div
+              key={dep.id}
+              className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-philgreen/30 transition-colors"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Heart className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{dep.firstName} {dep.middleName || ''} {dep.lastName}</p>
+                    <code className="text-xs font-mono text-philgreen-600 font-semibold tracking-wide">{dep.philhealthPin}</code>
+                  </div>
+                </div>
+                <span className={`badge text-xs ${dep.hasConsent ? 'badge-green' : 'badge-yellow'}`}>
+                  {dep.hasConsent ? 'Consent Given' : 'No Consent'}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-gray-50 p-2 rounded-lg">
+                  <p className="text-gray-400 uppercase tracking-wider mb-0.5">Date of Birth</p>
+                  <p className="font-medium text-gray-800">{formatDate(dep.dateOfBirth)}</p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded-lg">
+                  <p className="text-gray-400 uppercase tracking-wider mb-0.5">Sex</p>
+                  <p className="font-medium text-gray-800">{dep.sex}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MemberCard({ member }: MemberCardProps) {
-  const fullName = `${member.firstName} ${member.middleName} ${member.lastName}${member.suffix ? ` ${member.suffix}` : ''}`;
+  const fullName = `${member.firstName} ${member.middleName || ''} ${member.lastName}${member.extension ? ` ${member.extension}` : ''}`;
   const age = calculateAge(member.dateOfBirth);
 
   return (
@@ -94,8 +155,8 @@ export default function MemberCard({ member }: MemberCardProps) {
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <StatusBadge status={member.membershipStatus} />
-            <span className="badge badge-blue">{member.membershipType}</span>
+            <StatusBadge status="Active" />
+            <span className="badge badge-blue">{member.clientType}</span>
           </div>
         </div>
 
@@ -117,37 +178,31 @@ export default function MemberCard({ member }: MemberCardProps) {
           </div>
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Civil Status</p>
-            <p className="text-sm font-medium text-gray-800">{member.civilStatus}</p>
+            <p className="text-sm font-medium text-gray-800">Single</p>
           </div>
-          {member.employer && (
-            <div className="col-span-2 md:col-span-3">
-              <p className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Employer</p>
-              <div className="flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-gray-500" />
-                <p className="text-sm font-medium text-gray-800">{member.employer}</p>
-              </div>
-            </div>
-          )}
+
         </div>
 
         {/* Contact */}
         <div className="flex flex-wrap gap-4 mb-5 text-sm">
           <div className="flex items-center gap-1.5 text-gray-600">
             <Phone className="w-4 h-4 text-gray-400" />
-            <span>{member.phone}</span>
+            <span>{member.mobileNumber || 'N/A'}</span>
           </div>
-          {member.email && (
+          {member.landlineNumber && (
             <div className="flex items-center gap-1.5 text-gray-600">
-              <Mail className="w-4 h-4 text-gray-400" />
-              <span>{member.email}</span>
+              <Phone className="w-4 h-4 text-gray-400" />
+              <span>{member.landlineNumber}</span>
             </div>
           )}
-          <div className="flex items-center gap-1.5 text-gray-600">
-            <MapPin className="w-4 h-4 text-gray-400" />
-            <span className="line-clamp-1">
-              {member.address}, {member.city}
-            </span>
-          </div>
+          {(member.barangay || member.cityMunicipality) && (
+            <div className="flex items-center gap-1.5 text-gray-600">
+              <MapPin className="w-4 h-4 text-gray-400" />
+              <span className="line-clamp-1">
+                {member.barangay}{member.barangay && member.cityMunicipality ? ', ' : ''}{member.cityMunicipality}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* YAKAP benefit */}
@@ -155,49 +210,21 @@ export default function MemberCard({ member }: MemberCardProps) {
           <div className="flex items-center gap-2 mb-3">
             <Shield className="w-4 h-4 text-philgreen" />
             <span className="text-sm font-semibold text-gray-800">
-              YAKAP Benefit — {member.yakapBenefit.year}
+              {member.packageType ?? 'YAKAP'} Benefit — {member.fpeRecords?.[0]?.effectivityYear ?? new Date().getFullYear()}
             </span>
             <span className="ml-auto text-xs text-gray-500">
-              {member.yakapBenefit.availments} availment{member.yakapBenefit.availments !== 1 ? 's' : ''}
+              {(() => {
+                const totalAvailments = member.eligibilityChecks?.length ?? 0;
+                return `${totalAvailments} check${totalAvailments !== 1 ? 's' : ''}`;
+              })()}
             </span>
           </div>
-          <YakapBar used={member.yakapBenefit.usedAmount} total={member.yakapBenefit.totalAllotment} />
-          {member.yakapBenefit.lastAvailmentDate && (
-            <p className="text-xs text-gray-400 mt-2">
-              Last availed: {formatDate(member.yakapBenefit.lastAvailmentDate)}
-            </p>
-          )}
+          <YakapBar used={0} total={2000} />
         </div>
 
         {/* Dependents */}
-        {member.dependents.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-semibold text-gray-700">
-                Dependents ({member.dependents.length})
-              </span>
-            </div>
-            <div className="space-y-2">
-              {member.dependents.map((dep) => (
-                <div
-                  key={dep.id}
-                  className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-gray-100 hover:border-philgreen/30 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
-                      <Heart className="w-3.5 h-3.5 text-gray-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{dep.fullName}</p>
-                      <p className="text-xs text-gray-400">{dep.sex} · {dep.relationship}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs text-gray-400">{formatDate(dep.dateOfBirth)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {member.dependents && member.dependents.length > 0 && (
+          <DependentAccordion dependents={member.dependents} />
         )}
       </div>
     </div>

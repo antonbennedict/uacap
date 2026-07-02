@@ -8,12 +8,14 @@ import { formatDateTime } from '@/lib/utils';
 import { getMedicineStatus } from '@/lib/types';
 
 export default function GamotPage() {
-  const { medicines, lastUpdated } = useAppStore();
+  // Removed useAppStore destructing for legacy properties
+  const medicines: any[] = [];
+  const lastUpdated = new Date().toISOString();
 
-  const outOfStock = medicines.filter((m) => getMedicineStatus(m.currentStock) === 'Out of Stock').length;
-  const lowStock = medicines.filter((m) => getMedicineStatus(m.currentStock) === 'Low').length;
-  const adequate = medicines.filter((m) => getMedicineStatus(m.currentStock) === 'Adequate').length;
-  const totalItems = medicines.reduce((sum, m) => sum + m.currentStock, 0);
+  const outOfStock = medicines.filter((m) => getMedicineStatus(m.quantity) === 'Out of Stock').length;
+  const lowStock = medicines.filter((m) => getMedicineStatus(m.quantity) === 'Low').length;
+  const adequate = medicines.filter((m) => getMedicineStatus(m.quantity) === 'Adequate').length;
+  const totalItems = medicines.reduce((sum, m) => sum + m.quantity, 0);
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

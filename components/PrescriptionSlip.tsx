@@ -12,7 +12,7 @@ interface PrescriptionSlipProps {
 
 const PrescriptionSlip = forwardRef<HTMLDivElement, PrescriptionSlipProps>(
   ({ prescription, clinic, member }, ref) => {
-    const fullName = `${member.firstName} ${member.middleName} ${member.lastName}${member.suffix ? ` ${member.suffix}` : ''}`;
+    const fullName = `${member.firstName} ${member.middleName || ''} ${member.lastName}${member.extension ? ` ${member.extension}` : ''}`;
 
     return (
       <div
@@ -111,11 +111,11 @@ const PrescriptionSlip = forwardRef<HTMLDivElement, PrescriptionSlipProps>(
             </div>
             <div>
               <p style={{ fontSize: '9px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 2px 0' }}>Address</p>
-              <p style={{ fontSize: '11px', color: '#333', margin: 0 }}>{member.address}, {member.city}</p>
+              <p style={{ fontSize: '11px', color: '#333', margin: 0 }}>{member.barangay}{member.barangay && member.cityMunicipality ? ', ' : ''}{member.cityMunicipality || 'Not provided'}</p>
             </div>
             <div>
               <p style={{ fontSize: '9px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 2px 0' }}>Membership Type</p>
-              <p style={{ fontSize: '11px', color: '#333', margin: 0 }}>{member.membershipType}</p>
+              <p style={{ fontSize: '11px', color: '#333', margin: 0 }}>{member.clientType}</p>
             </div>
             {prescription.diagnosis && (
               <div>

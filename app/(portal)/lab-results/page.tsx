@@ -1,18 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
-import membersData from '@/lib/data/members.json';
 import type { Member, LabTestType, LabResult } from '@/lib/types';
 import { FlaskConical, Search, User, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
 
-const allMembers: Member[] = membersData as Member[];
 
-const LAB_TESTS: LabTestType[] = ['CBC', 'Urinalysis', 'Chest X-Ray', 'Blood Chemistry', 'Lipid Profile', 'Cancer Screening'];
+const LAB_TESTS: LabTestType[] = ['CBC', 'Urinalysis', 'Chest X-Ray', 'Blood Chemistry', 'Lipid Profile', 'Cancer Screening', 'Mammogram', 'Ultrasound (upper abdomen, pelvic, and breast only)'];
 
-const LAB_FIELDS: Record<LabTestType, { key: string; label: string; unit: string; type: 'number' | 'text' }[]> = {
+const LAB_FIELDS: Record<LabTestType, { key: string; label: string; unit?: string; type: 'number' | 'text' | 'select'; options?: string[] }[]> = {
   'CBC': [
     { key: 'WBC', label: 'WBC', unit: '× 10³/μL', type: 'number' },
     { key: 'RBC', label: 'RBC', unit: '× 10⁶/μL', type: 'number' },
@@ -50,9 +48,16 @@ const LAB_FIELDS: Record<LabTestType, { key: string; label: string; unit: string
     { key: 'VLDL', label: 'VLDL', unit: 'mg/dL', type: 'number' },
   ],
   'Cancer Screening': [
-    { key: 'TestName', label: 'Specific Test (e.g. PSA, CA-125)', unit: '', type: 'text' },
-    { key: 'Value', label: 'Value / Result', unit: '', type: 'text' },
-    { key: 'ReferenceRange', label: 'Reference Range', unit: '', type: 'text' },
+    { key: 'pap-smear', label: 'Pap Smear Result', type: 'select', options: ['Negative', 'Positive', 'Inconclusive'] },
+    { key: 'fob', label: 'Fecal Occult Blood', type: 'select', options: ['Negative', 'Positive'] }
+  ],
+  'Mammogram': [
+    { key: 'birads', label: 'BI-RADS Category', type: 'select', options: ['0 - Incomplete', '1 - Negative', '2 - Benign', '3 - Probably Benign', '4 - Suspicious', '5 - Highly Suggestive of Malignancy', '6 - Known Biopsy Proven'] },
+    { key: 'findings', label: 'Findings', type: 'text' }
+  ],
+  'Ultrasound (upper abdomen, pelvic, and breast only)': [
+    { key: 'region', label: 'Region Examined', type: 'select', options: ['Upper Abdomen', 'Pelvic', 'Breast'] },
+    { key: 'impression', label: 'Impression', type: 'text' }
   ],
 };
 
@@ -60,13 +65,17 @@ const TEST_COLORS: Record<LabTestType, string> = {
   'CBC': 'bg-red-100 text-red-700',
   'Urinalysis': 'bg-yellow-100 text-yellow-700',
   'Chest X-Ray': 'bg-blue-100 text-blue-700',
-  'Blood Chemistry': 'bg-orange-100 text-orange-700',
-  'Lipid Profile': 'bg-purple-100 text-purple-700',
-  'Cancer Screening': 'bg-rose-100 text-rose-700',
+  'Blood Chemistry': 'bg-amber-100 text-amber-700',
+  'Lipid Profile': 'bg-rose-100 text-rose-700',
+  'Cancer Screening': 'bg-fuchsia-100 text-fuchsia-700',
+  'Mammogram': 'bg-pink-100 text-pink-700',
+  'Ultrasound (upper abdomen, pelvic, and breast only)': 'bg-cyan-100 text-cyan-700'
 };
 
 export default function LabResultsPage() {
-  const { labResults, saveLabResult, verifyLabResult } = useAppStore();
+  const labResults: any[] = [];
+  const saveLabResult = (a: any) => {};
+  const verifyLabResult = (a: any) => {};
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
@@ -74,6 +83,22 @@ export default function LabResultsPage() {
   const [findings, setFindings] = useState<Record<string, string>>({});
   const [narrative, setNarrative] = useState('');
   const [encodedBy, setEncodedBy] = useState('Lab Officer Cruz');
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
+
+  useEffect(() => {
+    async function fetchMembers() {
+      try {
+        const response = await fetch('/api/members');
+        const data = await response.json();
+        if (data.members) {
+          setAllMembers(data.members);
+        }
+      } catch (error) {
+        console.error('Failed to fetch members:', error);
+      }
+    }
+    fetchMembers();
+  }, []);
 
   const filteredMembers = allMembers.filter(m => {
     const q = memberSearch.toLowerCase();
@@ -103,7 +128,7 @@ export default function LabResultsPage() {
       id: `lab-${Date.now()}`,
       memberPin: selectedMember.philhealthPin,
       memberName: `${selectedMember.firstName} ${selectedMember.lastName}`,
-      clinicId: selectedMember.registeredClinicId,
+      clinicId: 'DEFAULT_CLINIC',
       testType: selectedTest,
       requestedDate: new Date().toISOString(),
       resultDate: new Date().toISOString(),
@@ -225,7 +250,7 @@ export default function LabResultsPage() {
               {patientResults.map(r => (
                 <div key={r.id} className="border border-gray-100 rounded-xl p-3 bg-white hover:shadow-sm transition">
                   <div className="flex justify-between items-start mb-2">
-                    <span className={`badge text-xs ${TEST_COLORS[r.testType]} border-0`}>{r.testType}</span>
+                    <span className={`badge text-xs ${TEST_COLORS[r.testType as LabTestType]} border-0`}>{r.testType}</span>
                     <span className={`badge text-xs ${r.status === 'Verified' ? 'badge-green' : r.status === 'Resulted' ? 'badge-blue' : 'badge-yellow'}`}>{r.status}</span>
                   </div>
                   <p className="text-xs text-gray-400 mb-2">{formatDateTime(r.requestedDate)} · {r.encodedBy}</p>

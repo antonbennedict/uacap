@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 import { getMedicineStatus, type Medicine } from '@/lib/types';
@@ -14,34 +14,37 @@ interface MedicineTableProps {
 const ITEMS_PER_PAGE = 10;
 
 export default function MedicineTable({ onRestock }: MedicineTableProps) {
-  const { medicines, restockMedicine } = useAppStore();
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'All' | 'Adequate' | 'Low' | 'Out of Stock'>('All');
-  const [filterCategory, setFilterCategory] = useState('All');
   const [page, setPage] = useState(1);
   const [restockQty, setRestockQty] = useState<Record<string, number>>({});
   const [restockingId, setRestockingId] = useState<string | null>(null);
 
-  const categories = ['All', ...Array.from(new Set(medicines.map((m) => m.therapeuticCategory))).sort()];
+
+  useEffect(() => {
+    fetch('/api/medicines')
+      .then(res => res.json())
+      .then(data => setMedicines(data.medicines || []))
+      .catch(console.error);
+  }, []);
 
   const filtered = medicines.filter((m) => {
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||
       m.genericName.toLowerCase().includes(q) ||
-      m.brandName.toLowerCase().includes(q) ||
-      m.formularyCode.toLowerCase().includes(q) ||
-      m.therapeuticCategory.toLowerCase().includes(q);
-    const status = getMedicineStatus(m.currentStock);
+      (m.salt && m.salt.toLowerCase().includes(q)) ||
+      (m.package && m.package.toLowerCase().includes(q));
+    const status = getMedicineStatus(m.quantity);
     const matchesStatus = filterStatus === 'All' || status === filterStatus;
-    const matchesCategory = filterCategory === 'All' || m.therapeuticCategory === filterCategory;
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesSearch && matchesStatus;
   });
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const handleRestock = (med: Medicine) => {
+  const handleRestock = async (med: Medicine) => {
     const qty = restockQty[med.id] ?? 0;
     if (!qty || qty <= 0) {
       toast.error('Please enter a valid quantity to restock.');
@@ -49,13 +52,25 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
     }
 
     setRestockingId(med.id);
-    setTimeout(() => {
-      restockMedicine(med.id, qty, 'Admin');
+    try {
+      const res = await fetch('/api/medicines', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ medicineId: med.id, action: 'restock', quantity: qty }),
+      });
+      if (!res.ok) throw new Error('Failed to restock');
+      
+      const { medicine } = await res.json();
+      setMedicines(prev => prev.map(m => m.id === med.id ? medicine : m));
+      
       onRestock?.(med.id, qty);
-      toast.success(`Restocked ${med.genericName} by ${qty} ${med.unitOfMeasure}(s). New stock: ${med.currentStock + qty}.`);
+      toast.success(`Restocked ${med.genericName} by ${qty} ${med.unit || ''}(s). New stock: ${medicine.quantity}.`);
       setRestockQty((prev) => ({ ...prev, [med.id]: 0 }));
+    } catch (err) {
+      toast.error('Restock error');
+    } finally {
       setRestockingId(null);
-    }, 400);
+    }
   };
 
   const StatusBadge = ({ stock }: { stock: number }) => {
@@ -103,23 +118,14 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
             <option key={s}>{s}</option>
           ))}
         </select>
-        <select
-          value={filterCategory}
-          onChange={(e) => { setFilterCategory(e.target.value); setPage(1); }}
-          className="form-input text-sm min-w-[180px]"
-        >
-          {categories.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {[
-          { label: 'Adequate', count: medicines.filter((m) => getMedicineStatus(m.currentStock) === 'Adequate').length, cls: 'text-emerald-600' },
-          { label: 'Low Stock', count: medicines.filter((m) => getMedicineStatus(m.currentStock) === 'Low').length, cls: 'text-amber-500' },
-          { label: 'Out of Stock', count: medicines.filter((m) => getMedicineStatus(m.currentStock) === 'Out of Stock').length, cls: 'text-red-500' },
+          { label: 'Adequate', count: medicines.filter((m) => getMedicineStatus(m.quantity) === 'Adequate').length, cls: 'text-emerald-600' },
+          { label: 'Low Stock', count: medicines.filter((m) => getMedicineStatus(m.quantity) === 'Low').length, cls: 'text-amber-500' },
+          { label: 'Out of Stock', count: medicines.filter((m) => getMedicineStatus(m.quantity) === 'Out of Stock').length, cls: 'text-red-500' },
         ].map((s) => (
           <div key={s.label} className="card-stat text-center">
             <p className={`text-2xl font-bold ${s.cls}`}>{s.count}</p>
@@ -141,11 +147,10 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Code</th>
+                  <th>Salt</th>
                   <th>Generic Name</th>
-                  <th>Brand Name</th>
                   <th>Form / Strength</th>
-                  <th>Category</th>
+                  <th>Package</th>
                   <th className="text-right">Unit Price</th>
                   <th className="text-center">Stock</th>
                   <th className="text-center">Status</th>
@@ -155,32 +160,29 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
               <tbody>
                 {paginated.map((med) => {
                   const isLive = medicines.find((m) => m.id === med.id);
-                  const liveStock = isLive?.currentStock ?? med.currentStock;
+                  const liveStock = isLive?.quantity ?? med.quantity;
                   const isRestocking = restockingId === med.id;
                   return (
                     <tr key={med.id} className={liveStock === 0 ? 'bg-red-50/30' : liveStock <= 10 ? 'bg-amber-50/20' : ''}>
                       <td>
-                        <code className="text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                          {med.formularyCode}
-                        </code>
+                        <span className="text-sm text-gray-700">{med.salt || 'N/A'}</span>
                       </td>
                       <td className="font-semibold text-gray-900">{med.genericName}</td>
-                      <td className="text-gray-600 italic text-sm">{med.brandName}</td>
                       <td>
                         <span className="text-sm text-gray-700">{med.dosageForm}</span>
                         <span className="text-xs text-gray-400 ml-1">· {med.strength}</span>
                       </td>
                       <td>
                         <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
-                          {med.therapeuticCategory}
+                          {med.package || 'N/A'}
                         </span>
                       </td>
-                      <td className="text-right font-medium text-gray-700">{formatCurrency(med.unitPrice)}</td>
+                      <td className="text-right font-medium text-gray-700">{formatCurrency(med.actualUnitPrice)}</td>
                       <td className="text-center">
                         <span className={`text-base font-bold ${liveStock === 0 ? 'text-red-500' : liveStock <= 10 ? 'text-amber-500' : 'text-gray-900'}`}>
                           {liveStock}
                         </span>
-                        <span className="text-xs text-gray-400 ml-1">{med.unitOfMeasure}</span>
+                        <span className="text-xs text-gray-400 ml-1">{med.unit}</span>
                       </td>
                       <td className="text-center">
                         <StatusBadge stock={liveStock} />

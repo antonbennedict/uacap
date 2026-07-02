@@ -11,7 +11,7 @@ export type StockStatus = 'Adequate' | 'Low' | 'Out of Stock';
 export type PrescriptionStatus = 'Draft' | 'Finalized' | 'Cancelled';
 export type TriageStatus = 'Waiting' | 'In-Consult' | 'Done' | 'Referred';
 export type TriagePriority = 'Urgent' | 'Normal' | 'Low';
-export type LabTestType = 'CBC' | 'Urinalysis' | 'Chest X-Ray' | 'Blood Chemistry' | 'Lipid Profile' | 'Cancer Screening';
+export type LabTestType = 'CBC' | 'Urinalysis' | 'Chest X-Ray' | 'Blood Chemistry' | 'Lipid Profile' | 'Cancer Screening' | 'Mammogram' | 'Ultrasound (upper abdomen, pelvic, and breast only)';
 export type AuditActionType = 'RESTOCK' | 'PRESCRIPTION_FINALIZED' | 'STOCK_DEDUCTED' | 'LOGIN' | 'ELIGIBILITY_CHECK' | 'FPE_ENCODED' | 'PHIC_DISPATCHED' | 'TRANSMITTAL_DISPATCHED' | 'SOAP_FINALIZED' | 'LAB_RESULTED' | 'MASTERLIST_IMPORTED' | 'TRIAGE_UPDATED';
 
 // ============================================================
@@ -56,6 +56,8 @@ export interface SOAPNote {
   plan: string;
   prescriptionIds: string[];
   physicianName: string;
+  isYearEndCompliant?: boolean;
+  satisfactionScore?: string;
   status: 'Draft' | 'Finalized';
   createdAt: string;
 }
@@ -141,6 +143,7 @@ export interface FPERecord {
   lifestyle: FPELifestyle;
   medicalHistory: string;
   status: 'Draft' | 'Encoded' | 'Dispatched';
+  initialTrancheAmount?: number;
   dispatchedAt: string | null;
 }
 
@@ -190,25 +193,33 @@ export interface YakapBenefit {
 export interface Member {
   id: string;
   philhealthPin: string;
+  packageType: string;
+  hasConsent: boolean;
+  clientType: string;
   lastName: string;
   firstName: string;
-  middleName: string;
-  suffix?: string;
+  middleName: string | null;
+  extension: string | null;
   dateOfBirth: string;
-  sex: Sex;
-  civilStatus: CivilStatus;
-  address: string;
-  city: string;
-  province: string;
-  zipCode: string;
-  phone: string;
-  email?: string;
-  membershipType: MembershipType;
-  membershipStatus: MembershipStatus;
-  employer?: string;
-  registeredClinicId: string;
-  dependents: Dependent[];
-  yakapBenefit: YakapBenefit;
+  sex: string;
+  mobileNumber: string | null;
+  landlineNumber: string | null;
+  barangay: string | null;
+  cityMunicipality: string | null;
+  province: string | null;
+  
+  sponsorPin: string | null;
+  sponsorLastName: string | null;
+  sponsorFirstName: string | null;
+  sponsorMiddleName: string | null;
+  sponsorExtension: string | null;
+  sponsorDateOfBirth: string | null;
+  sponsorSex: string | null;
+
+  dependents?: Dependent[];
+  
+  eligibilityChecks?: any[];
+  fpeRecords?: any[];
   photoUrl?: string;
 }
 
@@ -217,17 +228,17 @@ export interface Member {
 // ============================================================
 export interface Medicine {
   id: string;
-  formularyCode: string;
   genericName: string;
-  brandName: string;
-  dosageForm: DosageForm;
-  strength: string;
-  unitOfMeasure: string;
-  currentStock: number;
-  minimumStock: number;
-  therapeuticCategory: string;
-  manufacturer?: string;
-  unitPrice: number;
+  salt: string | null;
+  strength: string | null;
+  dosageForm: string | null;
+  unit: string | null;
+  package: string | null;
+  quantity: number;
+  actualUnitPrice: number;
+  stockStatus: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export function getMedicineStatus(stock: number): StockStatus {

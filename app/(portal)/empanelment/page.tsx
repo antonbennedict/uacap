@@ -102,7 +102,7 @@ function Step1({
 }: {
   onSelect: (m: Member) => void;
 }) {
-  const { members } = useAppStore();
+  // Removed useAppStore members destructuring
   const [query,    setQuery]    = useState('');
   const [results,  setResults]  = useState<Member[]>([]);
   const [loading,  setLoading]  = useState(false);
@@ -113,18 +113,20 @@ function Step1({
     const q = query.trim();
     if (!q) { toast.error('Enter a PhilHealth PIN or name.'); return; }
     setLoading(true); setSearched(false); setPicked(null);
-    await new Promise(r => setTimeout(r, 600));
-    const lower = q.toLowerCase();
-    const found = members.filter(m => {
-      const full = `${m.firstName} ${m.middleName} ${m.lastName}`.toLowerCase();
-      return full.includes(lower) || m.philhealthPin.toLowerCase().includes(lower);
-    });
-    setResults(found);
-    setSearched(true);
-    setLoading(false);
-    if (!found.length) toast.warning('No members found.');
-    else toast.success(`${found.length} member(s) found.`);
-  }, [query, members]);
+    try {
+      const response = await fetch(`/api/members?q=${encodeURIComponent(q)}`);
+      const data = await response.json();
+      const found = data.members || [];
+      setResults(found);
+      setSearched(true);
+      if (!found.length) toast.warning('No members found.');
+      else toast.success(`${found.length} member(s) found.`);
+    } catch {
+      toast.error('Failed to search members.');
+    } finally {
+      setLoading(false);
+    }
+  }, [query]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
@@ -188,11 +190,11 @@ function Step1({
                       {m.lastName}, {m.firstName} {m.middleName}
                     </p>
                     <p className="text-xs text-gray-500 font-mono">{m.philhealthPin}</p>
-                    <p className="text-xs text-gray-400">{m.membershipType} · {m.address}, {m.city}</p>
+                    <p className="text-xs text-gray-400">{m.clientType} · {m.barangay}, {m.cityMunicipality}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span className={`badge text-xs ${m.membershipStatus === 'Active' ? 'badge-green' : 'badge-red'}`}>
-                      {m.membershipStatus}
+                    <span className="badge text-xs badge-green">
+                      Active
                     </span>
                     <span className="text-xs text-gray-400">{calcAge(m.dateOfBirth)} yrs · {m.sex}</span>
                   </div>
@@ -592,7 +594,7 @@ function Step3({ member, onDone }: {
     return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
   })();
 
-  const remaining = member.yakapBenefit.totalAllotment - member.yakapBenefit.usedAmount;
+  const remaining = ((member as any).yakapBenefit?.totalAllotment || 2000) - ((member as any).yakapBenefit?.usedAmount || 0);
 
   function handlePrint() {
     window.print();
@@ -685,22 +687,22 @@ function Step3({ member, onDone }: {
               </div>
               <div className="col-span-4 p-3 border-b border-gray-300">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block">5. Civil Status</span>
-                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.civilStatus}</span>
+                <span className="text-xs font-bold text-gray-900 mt-0.5">Not Specified</span>
               </div>
 
               <div className="col-span-6 p-3 border-r border-gray-300">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">6. Membership Type</span>
-                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.membershipType}</span>
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">6. Client Type</span>
+                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.clientType}</span>
               </div>
               <div className="col-span-6 p-3">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">7. Contact Number / Email</span>
-                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.phone} {member.email ? `· ${member.email}` : ''}</span>
+                <span className="text-[9px] font-bold text-gray-400 uppercase block">7. Contact Number(s)</span>
+                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.mobileNumber} {member.landlineNumber ? `· ${member.landlineNumber}` : ''}</span>
               </div>
 
               <div className="col-span-12 p-3 border-t border-gray-300 bg-gray-50/50">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block">8. Residential Address</span>
                 <span className="text-xs font-bold text-gray-800 uppercase mt-0.5">
-                  {member.address}, {member.city}, {member.province} {member.zipCode}
+                  {member.barangay}, {member.cityMunicipality}, {member.province}
                 </span>
               </div>
             </div>
@@ -749,11 +751,11 @@ function Step3({ member, onDone }: {
             <div className="grid grid-cols-3 divide-x divide-gray-300 text-xs">
               <div className="p-3 text-center">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block">Annual Allocation</span>
-                <span className="text-sm font-black text-gray-900 mt-1 block">₱{member.yakapBenefit.totalAllotment.toLocaleString()}</span>
+                <span className="text-sm font-black text-gray-900 mt-1 block">₱{((member as any).yakapBenefit?.totalAllotment || 2000).toLocaleString()}</span>
               </div>
               <div className="p-3 text-center">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block">Availed Amount</span>
-                <span className="text-sm font-extrabold text-amber-600 mt-1 block">₱{member.yakapBenefit.usedAmount.toLocaleString()}</span>
+                <span className="text-sm font-extrabold text-amber-600 mt-1 block">₱{((member as any).yakapBenefit?.usedAmount || 0).toLocaleString()}</span>
               </div>
               <div className="p-3 text-center bg-emerald-50/10">
                 <span className="text-[9px] font-bold text-emerald-800 uppercase block">Remaining Balance</span>

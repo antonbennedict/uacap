@@ -3,13 +3,10 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
-import membersData from '@/lib/data/members.json';
 import type { Member, SOAPNote } from '@/lib/types';
 import { ClipboardList, User, Search, CheckCircle, Clock, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
-
-const allMembers: Member[] = membersData as Member[];
 
 const ICD10_CODES = [
   { code: 'I10', description: 'Essential (Primary) Hypertension' },
@@ -79,9 +76,12 @@ const PHYSICIANS = [
 
 function ConsultationContent() {
   const searchParams = useSearchParams();
-  const { soapNotes, saveSOAPNote, finalizeSOAPNote } = useAppStore();
+  const { saveSOAPNote } = useAppStore();
+  const [soapNotes, setSoapNotes] = useState<any[]>([]);
+  const finalizeSOAPNote = async (id: string) => { setSoapNotes(prev => prev.map(n => n.id === id ? { ...n, status: 'Finalized' } : n)); };
 
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [memberSearch, setMemberSearch] = useState('');
   const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
   const [icd10Search, setIcd10Search] = useState('');
@@ -125,6 +125,22 @@ function ConsultationContent() {
     }
   }, [heightVal, heightUnit, weightVal, weightUnit]);
 
+  // Fetch members dynamically
+  useEffect(() => {
+    async function fetchMembers() {
+      try {
+        const response = await fetch('/api/members');
+        const data = await response.json();
+        if (data.members) {
+          setAllMembers(data.members);
+        }
+      } catch (error) {
+        console.error('Failed to fetch members:', error);
+      }
+    }
+    fetchMembers();
+  }, []);
+
   const [assessment, setAssessment] = useState('');
   const [selectedDiagnoses, setSelectedDiagnoses] = useState<string[]>([]);
   const [selectedIcd, setSelectedIcd] = useState<{ code: string; description: string } | null>(null);
@@ -137,6 +153,8 @@ function ConsultationContent() {
   const [isActiveConsult, setIsActiveConsult] = useState(false);
   const [visitDate, setVisitDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [activeSoapTab, setActiveSoapTab] = useState<'S' | 'O' | 'A' | 'P'>('S');
+  const [satisfactionScore, setSatisfactionScore] = useState<string>('');
+  const [isYearEndCompliant, setIsYearEndCompliant] = useState(false);
 
   useEffect(() => {
     setIsActiveConsult(false);
@@ -170,6 +188,8 @@ function ConsultationContent() {
     setManagementChecked([]);
     setManagementOther('');
     setManagementNotApplicable(false);
+    setSatisfactionScore('');
+    setIsYearEndCompliant(false);
   }, [selectedMember]);
 
   const calcAge = (dob: string) => {
@@ -202,7 +222,7 @@ function ConsultationContent() {
         setMemberSearch(`${member.firstName} ${member.lastName}`);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, allMembers]);
 
   const filteredMembers = allMembers.filter(m => {
     const q = memberSearch.toLowerCase();
@@ -254,7 +274,7 @@ function ConsultationContent() {
       id: `soap-${Date.now()}`,
       memberPin: selectedMember.philhealthPin,
       memberName: `${selectedMember.firstName} ${selectedMember.lastName}`,
-      clinicId: selectedMember.registeredClinicId,
+      clinicId: 'DEFAULT_CLINIC',
       visitDate: new Date(visitDate).toISOString(),
       subjective: subjectiveText,
       assessment: selectedDiagnoses.join('; '),
@@ -272,6 +292,8 @@ function ConsultationContent() {
         weight: wMetric,
         height: hMetric,
       },
+      satisfactionScore: satisfactionScore || undefined,
+      isYearEndCompliant,
       status: 'Draft',
       createdAt: new Date().toISOString(),
     };
@@ -328,7 +350,7 @@ function ConsultationContent() {
       id: `soap-${Date.now()}`,
       memberPin: selectedMember.philhealthPin,
       memberName: `${selectedMember.firstName} ${selectedMember.lastName}`,
-      clinicId: selectedMember.registeredClinicId,
+      clinicId: 'DEFAULT_CLINIC',
       visitDate: new Date(visitDate).toISOString(),
       subjective: subjectiveText,
       assessment: selectedDiagnoses.join('; '),
@@ -346,6 +368,8 @@ function ConsultationContent() {
         weight: wMetric,
         height: hMetric,
       },
+      satisfactionScore: satisfactionScore || undefined,
+      isYearEndCompliant,
       status: 'Finalized',
       createdAt: new Date().toISOString(),
     };
@@ -462,7 +486,7 @@ function ConsultationContent() {
                   </div>
                   <div>
                     <span className="text-gray-400 block mb-0.5 font-medium">Extension</span>
-                    <span className="font-semibold text-gray-900 uppercase">{selectedMember.suffix || 'None'}</span>
+                    <span className="text-sm font-semibold text-gray-900 uppercase">{selectedMember.extension || 'None'}</span>
                   </div>
                   <div>
                     <span className="text-gray-400 block mb-0.5 font-medium">Date of Birth</span>
@@ -470,7 +494,7 @@ function ConsultationContent() {
                   </div>
                   <div>
                     <span className="text-gray-400 block mb-0.5 font-medium">Client Type</span>
-                    <span className="font-semibold text-gray-900">{selectedMember.membershipType}</span>
+                    <span className="font-semibold text-gray-900">{selectedMember.clientType}</span>
                   </div>
                   <div>
                     <span className="text-gray-400 block mb-0.5 font-medium">Effective Year</span>
@@ -621,7 +645,7 @@ function ConsultationContent() {
                       <label className="text-xs font-semibold text-gray-500 block mb-1">Type</label>
                       <input
                         type="text"
-                        defaultValue={selectedMember.membershipType}
+                        defaultValue={selectedMember.clientType}
                         className="form-input text-sm"
                       />
                     </div>
@@ -645,7 +669,7 @@ function ConsultationContent() {
                       <label className="text-xs font-semibold text-gray-500 block mb-1">Middle Name</label>
                       <input
                         type="text"
-                        defaultValue={selectedMember.middleName}
+                        defaultValue={selectedMember.middleName || ''}
                         className="form-input text-sm uppercase"
                       />
                     </div>
@@ -653,7 +677,7 @@ function ConsultationContent() {
                       <label className="text-xs font-semibold text-gray-500 block mb-1">Suffix</label>
                       <input
                         type="text"
-                        defaultValue={selectedMember.suffix || ''}
+                        defaultValue={selectedMember.extension || ''}
                         placeholder="e.g. Jr., III"
                         className="form-input text-sm uppercase"
                       />
@@ -662,7 +686,7 @@ function ConsultationContent() {
                       <label className="text-xs font-semibold text-gray-500 block mb-1">Contact No.</label>
                       <input
                         type="text"
-                        defaultValue={selectedMember.phone}
+                        defaultValue={selectedMember.mobileNumber || ''}
                         className="form-input text-sm"
                       />
                     </div>
@@ -1338,6 +1362,37 @@ function ConsultationContent() {
                           />
                         </div>
                       )}
+                    </div>
+                  </div>
+                  
+                  {/* C. Circular 2024-0013 Compliance */}
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">C. Consultation Outcomes (PhilHealth Circular 2024-0013)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-650 block mb-1">Patient Satisfaction Score</label>
+                        <select
+                          value={satisfactionScore}
+                          onChange={(e) => setSatisfactionScore(e.target.value)}
+                          className="form-input text-sm"
+                        >
+                          <option value="">-- Select --</option>
+                          <option value="HAPPY">Happy</option>
+                          <option value="NEUTRAL">Neutral</option>
+                          <option value="SAD">Sad</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center mt-6">
+                        <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={isYearEndCompliant}
+                            onChange={(e) => setIsYearEndCompliant(e.target.checked)}
+                            className="rounded border-gray-300 text-purple-650 focus:ring-purple-500 w-4 h-4"
+                          />
+                          Mark as Year-End Compliant Consultation
+                        </label>
+                      </div>
                     </div>
                   </div>
                 )}

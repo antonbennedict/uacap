@@ -48,7 +48,7 @@
   /* Sidebar */
   .sidebar {
     @apply w-64 min-h-screen flex flex-col;
-    background: linear-gradient(180deg, #0A1628 0%, #0d1e38 60%, #0a1a2e 100%);
+    background: linear-gradient(180deg, #0A1628 0%, #1a2a40 100%);
   }
 
   .sidebar-logo {
@@ -64,17 +64,16 @@
   }
 
   .sidebar-nav-link.active {
-    @apply bg-philgreen text-white shadow-lg;
-    box-shadow: 0 4px 15px rgba(0, 132, 61, 0.4);
+    @apply bg-[#004B87] text-white shadow-sm border border-[#004B87]/50;
   }
 
   /* Cards */
   .card-glass {
-    @apply bg-white rounded-2xl border border-gray-100 shadow-sm;
+    @apply bg-white rounded-2xl border border-slate-200/80 shadow-sm;
   }
 
   .card-stat {
-    @apply bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow duration-200;
+    @apply bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md transition-shadow duration-200;
   }
 
   /* Badges */

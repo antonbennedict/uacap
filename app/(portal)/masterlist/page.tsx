@@ -13,7 +13,8 @@ const INSTITUTION = {
 };
 
 export default function MasterlistPage() {
-  const { masterlistEntries, importMasterlistEntries } = useAppStore();
+  const { importMasterlistEntries } = useAppStore();
+  const masterlistEntries: any[] = [];
 
 
   const [isConnecting, setIsConnecting] = useState(false);
@@ -78,7 +79,7 @@ export default function MasterlistPage() {
     if (selectedIds.length === 0) { toast.error('Select at least one profile to import.'); return; }
     setIsImporting(true);
     setTimeout(() => {
-      importMasterlistEntries(selectedIds, 'Admin User');
+      importMasterlistEntries(selectedIds);
       setSelectedIds([]);
       setIsImporting(false);
       toast.success(`${selectedIds.length} profiles successfully imported to the local patient registry!`);

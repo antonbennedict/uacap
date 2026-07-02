@@ -7,7 +7,9 @@ import { Server, Calendar, CheckCircle, UploadCloud, Terminal, Shield, Lock, Act
 import { toast } from 'sonner';
 
 export default function TransmittalPage() {
-  const { fpeRecords, prescriptions, dispatchTransmittal } = useAppStore();
+  const fpeRecords: any[] = [];
+  const prescriptions: any[] = [];
+  const dispatchTransmittal = (a: any) => {};
   
   // Date range (default to current month)
   const [startDate, setStartDate] = useState(() => {

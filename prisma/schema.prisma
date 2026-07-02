@@ -1,0 +1,199 @@
+datasource db {
+  provider  = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 0. AUTHENTICATION MODULE
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String?  @unique
+  passwordHash String   
+  name         String
+  role         String   @default("Clinic Staff")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// 8. MASTERLIST IMPORT & 4. YAKAP EMPANELMENT
+model Member {
+  id                     String             @id @default(uuid())
+  philhealthPin          String             @unique
+  packageType            String             @default("KONSULTA")
+  hasConsent             Boolean            @default(false)      
+  clientType             String             
+  lastName               String
+  firstName              String
+  middleName             String?
+  extension              String?            
+  dateOfBirth            DateTime
+  sex                    String             
+  mobileNumber           String?
+  landlineNumber         String?
+  barangay               String?
+  cityMunicipality       String?
+  province               String?
+
+  // Dependent Sponsor Information Blocks
+  sponsorPin             String?
+  sponsorLastName        String?
+  sponsorFirstName       String?
+  sponsorMiddleName      String?
+  sponsorExtension       String?
+  sponsorDateOfBirth     DateTime?
+  sponsorSex             String?
+
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  triageEntries          TriageEntry[]
+  eligibilityChecks      EligibilityCheck[]
+  fpeRecords             FpeRecord[]
+  soapNotes              SoapNote[]
+  prescriptions          Prescription[]
+  labResults             LabResult[]
+}
+
+// 3. BENEFIT ELIGIBILITY (PBEF)
+model EligibilityCheck {
+  id           String   @id @default(uuid())
+  memberId     String
+  member       Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  checkedAt    DateTime @default(now())
+  status       String   
+  trackingCode String?  
+  checkedBy    String   
+}
+
+// 2. TRIAGE & DAILY OPERATIONS
+model TriageEntry {
+  id                String   @id @default(uuid())
+  memberId          String
+  member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  clinicId          String
+  arrivalTime       DateTime @default(now())
+  chiefComplaint    String   @db.Text
+  status            String   
+  priority          String   
+  assignedPhysician String?
+}
+
+// 5. FPE ENCODING & SUBMIT (The 7-Step HSA Wizard)
+model FpeRecord {
+  id                     String       @id @default(uuid())
+  caseNo                 String       @unique 
+  memberId               String
+  member                 Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  encounterDate          DateTime     @default(now())
+  effectivityYear        Int          @default(2026)
+
+  medicalSurgicalHistory Json         
+  familyPersonalHistory  Json         
+  immunizations          Json         
+  obGyneHistory          Json?        
+  vitalsAndPhysicals     Json         
+  ncdHighRiskAssessment  Json         
+  riskLevel              String       
+
+  fpeTrancheUnlocked     Boolean      @default(false)
+  initialTrancheAmount   Float        @default(680.00)
+  status                 String       @default("Draft") 
+  transmittalId          String?
+  transmittal            Transmittal? @relation(fields: [transmittalId], references: [id])
+}
+
+// 6. YAKAP CONSULTATION (SOAP Notes)
+model SoapNote {
+  id                 String           @id @default(uuid())
+  memberId           String
+  member             Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  visitDate          DateTime         @default(now())
+  
+  subjective         Json             
+  objective          Json             
+  assessment         Json             
+  planManagement     Json             
+  
+  physicianName      String
+  isYearEndCompliant Boolean          @default(false)
+  satisfactionScore  String?          // HAPPY, NEUTRAL, SAD
+  status             String           @default("Draft")
+}
+
+// 6. MEDICINE MODULE (Prescriptions & Dispensing Logs)
+model Prescription {
+  id                   String       @id @default(uuid())
+  transactionNumber    String       @unique 
+  memberId             String
+  member               Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  consultationDate     DateTime
+  
+  prescribingPhysician String
+  isDispensed          Boolean      @default(false)
+  dispensingPersonnel  String?
+  dispenseDate         DateTime?
+
+  items                Json         
+  satisfactionScore    String?      // HAPPY, NEUTRAL, SAD
+  status               String       @default("Draft")
+}
+
+// 7. LAB RESULTS ENCODING
+model LabResult {
+  id             String    @id @default(uuid())
+  memberId       String
+  member         Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  clinicId       String
+  testType       String    
+  requestedDate  DateTime  @default(now())
+  resultDate     DateTime?
+  findings       Json      
+  narrative      String?   @db.Text
+  status         String    @default("Pending") 
+  encodedBy      String
+}
+
+// 9. DIRECT PHIC DISPATCH
+model Transmittal {
+  id                String       @id @default(uuid())
+  clinicId          String
+  startDate         DateTime
+  endDate           DateTime
+  fpeCount          Int          @default(0)
+  prescriptionCount Int          @default(0)
+  soapCount         Int          @default(0)
+  labCount          Int          @default(0)
+  dispatchedAt      DateTime     @default(now())
+  actor             String
+  status            String       @default("Dispatched")
+
+  fpeRecords        FpeRecord[]
+}
+
+// 10. INVENTORY (GAMOT)
+model Medicine {
+  id              String   @id @default(uuid())
+  genericName     String
+  salt            String?
+  strength        String?
+  dosageForm      String?
+  unit            String?
+  package         String?
+  quantity        Int      @default(0)
+  actualUnitPrice Float    @default(0.0)
+  stockStatus     String   @default("Adequate")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// 11. AUDIT TRAIL
+model AuditLog {
+  id          String   @id @default(uuid())
+  actionType  String
+  description String
+  actor       String
+  timestamp   DateTime @default(now())
+}

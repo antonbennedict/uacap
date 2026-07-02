@@ -1,6 +1,27 @@
 'use client';
 
-import { mockSlip } from '@/lib/data/mockSlip';
+const mockSlip = {
+  name: "Garcia, Ana Bautista",
+  philhealthPin: "12-345678901-2",
+  dateOfBirth: "1990-05-15",
+  sex: "Female",
+  civilStatus: "Single",
+  membershipType: "Employed",
+  phone: "0917-123-4567",
+  email: "ana.garcia@email.com",
+  address: "123 Mabini St",
+  city: "San Fernando",
+  province: "Pampanga",
+  zipCode: "2000",
+  clinic: "University of the Assumption Clinic",
+  accreditationNo: "R3-PMP-2024-001",
+  yesDateSubmitted: new Date().toISOString(),
+  dateGenerated: "2026-12-31T23:59:59Z",
+  yesTransactionNo: "YES26-8A39B21",
+  annualAllocation: 2000,
+  availedAmount: 0,
+  remainingBalance: 2000
+};
 import { Printer, ArrowLeft, Heart, CheckCircle2, ShieldCheck, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
 
