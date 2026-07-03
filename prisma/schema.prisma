@@ -37,6 +37,12 @@ model Member {
   cityMunicipality       String?
   province               String?
 
+  // Masterlist Classification Fields
+  memberType             String?            // e.g. Student, Staff, Faculty, Guest
+  department             String?            // e.g. College of IT, Admin Office
+  idNumber               String?            // Student Number or Employee ID
+  enrollmentStatus       String?            @default("Active") // Active, Inactive, Graduated
+
   // Dependent Sponsor Information Blocks
   sponsorPin             String?
   sponsorLastName        String?

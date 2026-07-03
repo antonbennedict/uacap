@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
@@ -11,33 +11,34 @@ import {
   CheckCircle2, X
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { YesSlip } from './YesSlip';
 
-// ── Wizard Steps ─────────────────────────────────────────────
+// â”€â”€ Wizard Steps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const STEPS = [
   { id: 1, label: 'Select Patient',    icon: UserSearch,  color: '#3B82F6' },
   { id: 2, label: 'PCU Liveness',      icon: ScanFace,    color: '#8B5CF6' },
   { id: 3, label: 'YES Slip',          icon: FileCheck2,  color: '#10B981' },
 ];
 
-// ── Scan log entries ─────────────────────────────────────────
+// â”€â”€ Scan log entries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SCAN_LOGS: string[] = [
   '[CAM] Initializing camera module...',
   '[AI] Loading facial recognition model v3.2...',
   '[AI] PhilHealth Liveness Detection Engine ready',
   '[SCAN] Capturing video stream at 30fps...',
   '[AI] Detecting face landmarks...',
-  '[AI] Face detected — 68 landmark points mapped',
+  '[AI] Face detected â€” 68 landmark points mapped',
   '[LIVE] Running anti-spoofing check (depth analysis)...',
-  '[LIVE] Blink detection: PASS ✓',
-  '[LIVE] Head movement analysis: PASS ✓',
-  '[LIVE] Texture liveness check: PASS ✓',
+  '[LIVE] Blink detection: PASS âœ“',
+  '[LIVE] Head movement analysis: PASS âœ“',
+  '[LIVE] Texture liveness check: PASS âœ“',
   '[BIOM] Generating facial biometric template...',
   '[MATCH] Comparing against PhilHealth registry...',
-  '[MATCH] Identity confirmed — confidence: 98.7%',
-  '[SYS] Liveness verification COMPLETE ✓',
+  '[MATCH] Identity confirmed â€” confidence: 98.7%',
+  '[SYS] Liveness verification COMPLETE âœ“',
 ];
 
-// ── Helpers ──────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
 }
@@ -53,9 +54,9 @@ function genSlipNo() {
   return `YES-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900000) + 100000)}`;
 }
 
-// ════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Step Indicator
-// ════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function StepIndicator({ current }: { current: number }) {
   return (
     <div className="flex items-center justify-center gap-0 mb-8">
@@ -94,9 +95,9 @@ function StepIndicator({ current }: { current: number }) {
   );
 }
 
-// ════════════════════════════════════════════════════════════
-// STEP 1 — Select Patient
-// ════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// STEP 1 â€” Select Patient
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function Step1({
   onSelect,
 }: {
@@ -241,13 +242,13 @@ function Step1({
                       {m.lastName}, {m.firstName} {m.middleName}
                     </p>
                     <p className="text-xs text-gray-500 font-mono">{m.philhealthPin}</p>
-                    <p className="text-xs text-gray-400">{m.clientType} · {m.barangay}, {m.cityMunicipality}</p>
+                    <p className="text-xs text-gray-400">{m.clientType} Â· {m.barangay}, {m.cityMunicipality}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     <span className="badge text-xs badge-green">
                       Active
                     </span>
-                    <span className="text-xs text-gray-400">{calcAge(m.dateOfBirth)} yrs · {m.sex}</span>
+                    <span className="text-xs text-gray-400">{calcAge(m.dateOfBirth)} yrs Â· {m.sex}</span>
                   </div>
                   {picked?.id === m.id && <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0" />}
                 </div>
@@ -281,9 +282,9 @@ function Step1({
   );
 }
 
-// ════════════════════════════════════════════════════════════
-// STEP 2 — PCU Liveness / Face Scan
-// ════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// STEP 2 â€” PCU Liveness / Face Scan
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 type LivenessPhase = 'idle' | 'initializing' | 'scanning' | 'processing' | 'verified';
 
 function Step2({ member, onVerified }: { member: Member; onVerified: () => void }) {
@@ -359,7 +360,7 @@ function Step2({ member, onVerified }: { member: Member; onVerified: () => void 
     timeoutsRef.current.forEach(clearTimeout);
     timeoutsRef.current = [];
 
-    // Schedule each log line with individual timeouts — avoids closure/stale-i issues
+    // Schedule each log line with individual timeouts â€” avoids closure/stale-i issues
     SCAN_LOGS.forEach((entry, idx) => {
       const t = setTimeout(() => {
         setLogs(prev => [...prev, entry]);   // entry is captured correctly here
@@ -626,263 +627,18 @@ function Step2({ member, onVerified }: { member: Member; onVerified: () => void 
   );
 }
 
-// ════════════════════════════════════════════════════════════
-// STEP 3 — YES Slip
-// ════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// STEP 3 â€” YES Slip
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function Step3({ member, onDone }: {
   member: Member;
   onDone: () => void;
 }) {
-  // Generate slip details once on mount
-  const slip = useRef({
-    number:      genSlipNo(),
-    generatedAt: nowString(),
-  }).current;
-
-  const expiry = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() + 1);
-    return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
-  })();
-
-  const remaining = ((member as any).yakapBenefit?.totalAllotment || 2000) - ((member as any).yakapBenefit?.usedAmount || 0);
-
-  function handlePrint() {
-    window.print();
-  }
-
-  function handleSave() {
-    toast.success('YES Slip saved to patient records successfully!');
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      {/* Success header */}
-      <div className="text-center">
-        <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center shadow-lg"
-          style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}>
-          <FileCheck2 className="w-7 h-7 text-white" />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900">Empanelment Complete!</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          <span className="font-semibold text-emerald-700">{member.firstName} {member.lastName}</span> is now enrolled in YAKAP
-        </p>
-      </div>
-
-      {/* ── YES SLIP DOCUMENT ─────────────────────────── */}
-      {/* ── YES SLIP DOCUMENT ─────────────────────────── */}
-      <div id="yes-slip" className="bg-white overflow-hidden border-2 border-emerald-800 shadow-xl rounded-xl text-gray-950 font-sans max-w-2xl mx-auto">
-        
-        {/* Government / PHIC Header Banner */}
-        <div className="px-6 py-4 bg-white border-b-4 border-[#FFCD00]">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {/* Custom CSS PhilHealth Shield/Seal Logo */}
-              <div className="w-12 h-12 rounded-full border-2 border-[#00843D] bg-white flex items-center justify-center relative overflow-hidden shadow-sm flex-shrink-0">
-                <div className="absolute inset-0 bg-[#00843D]/10 rounded-full" />
-                <Heart className="w-6 h-6 text-[#00843D] fill-[#00843D] relative z-10" />
-                <div className="absolute bottom-0 inset-x-0 h-3 bg-[#FFCD00]" />
-              </div>
-              <div>
-                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-none">Republic of the Philippines</p>
-                <p className="text-xs font-black text-[#00843D] uppercase tracking-wide mt-0.5">Philippine Health Insurance Corporation</p>
-                <p className="text-[10px] font-medium text-gray-600">YAKAP UACAP Primary Care Program</p>
-              </div>
-            </div>
-            <div className="text-right border-l border-gray-200 pl-4 flex-shrink-0">
-              <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">YES SLIP NUMBER</p>
-              <p className="text-sm font-extrabold font-mono text-emerald-900 tracking-wider bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{slip.number}</p>
-              <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-[#00843D] text-white text-[9px] font-black tracking-widest">
-                ACTIVE
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Title and Form Subhead */}
-        <div className="bg-[#00843D] text-white py-2.5 px-6 flex items-center justify-between">
-          <h3 className="text-xs font-black uppercase tracking-widest">
-            eKONSULTA MEMBER EMPANELMENT SLIP (YES SLIP)
-          </h3>
-          <p className="text-[10px] text-emerald-100 font-mono">PHIC Form YES-1 · 2026</p>
-        </div>
-
-        <div className="p-6 space-y-5 bg-stone-50/30">
-          
-          {/* PART I - MEMBER IDENTIFICATION */}
-          <div className="border border-gray-300 bg-white rounded-lg overflow-hidden shadow-sm">
-            <div className="bg-gray-100 border-b border-gray-300 px-4 py-1.5 flex justify-between items-center">
-              <span className="text-[10px] font-extrabold text-gray-700 uppercase tracking-wider">PART I - MEMBER IDENTIFICATION</span>
-              <span className="text-[9px] font-semibold text-gray-400">Section A</span>
-            </div>
-            
-            <div className="grid grid-cols-12 text-xs">
-              <div className="col-span-8 p-3 border-r border-b border-gray-300">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">1. Member's Name (Last Name, First Name, Middle Name)</span>
-                <span className="text-xs font-bold text-gray-900 uppercase mt-0.5">
-                  {member.lastName}, {member.firstName} {member.middleName}
-                </span>
-              </div>
-              <div className="col-span-4 p-3 border-b border-gray-300 bg-emerald-50/20">
-                <span className="text-[9px] font-bold text-emerald-800 uppercase block">2. PhilHealth PIN</span>
-                <span className="text-xs font-mono font-extrabold text-emerald-950 mt-0.5 block">{member.philhealthPin}</span>
-              </div>
-
-              <div className="col-span-4 p-3 border-r border-b border-gray-300">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">3. Date of Birth</span>
-                <span className="text-xs font-bold text-gray-900 mt-0.5">{formatDate(member.dateOfBirth)}</span>
-              </div>
-              <div className="col-span-4 p-3 border-r border-b border-gray-300">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">4. Sex / Age</span>
-                <span className="text-xs font-bold text-gray-900 uppercase mt-0.5">{member.sex} / {calcAge(member.dateOfBirth)} yrs</span>
-              </div>
-              <div className="col-span-4 p-3 border-b border-gray-300">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">5. Civil Status</span>
-                <span className="text-xs font-bold text-gray-900 mt-0.5">Not Specified</span>
-              </div>
-
-              <div className="col-span-6 p-3 border-r border-gray-300">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">6. Client Type</span>
-                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.clientType}</span>
-              </div>
-              <div className="col-span-6 p-3">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">7. Contact Number(s)</span>
-                <span className="text-xs font-bold text-gray-900 mt-0.5">{member.mobileNumber} {member.landlineNumber ? `· ${member.landlineNumber}` : ''}</span>
-              </div>
-
-              <div className="col-span-12 p-3 border-t border-gray-300 bg-gray-50/50">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">8. Residential Address</span>
-                <span className="text-xs font-bold text-gray-800 uppercase mt-0.5">
-                  {member.barangay}, {member.cityMunicipality}, {member.province}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* PART II - PRIMARY CARE PROVIDER DETAILS */}
-          <div className="border border-gray-300 bg-white rounded-lg overflow-hidden shadow-sm">
-            <div className="bg-gray-100 border-b border-gray-300 px-4 py-1.5 flex justify-between items-center">
-              <span className="text-[10px] font-extrabold text-gray-700 uppercase tracking-wider">PART II - HEALTH CARE PROVIDER ASSIGNMENT</span>
-              <span className="text-[9px] font-semibold text-gray-400">Section B</span>
-            </div>
-            
-            <div className="grid grid-cols-12 text-xs">
-              <div className="col-span-7 p-3 border-r border-gray-300">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">9. Assigned Healthcare Facility</span>
-                <span className="text-xs font-bold text-emerald-950 mt-0.5 block uppercase">University of the Assumption Clinic</span>
-              </div>
-              <div className="col-span-5 p-3">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">10. Accreditation / Code No.</span>
-                <span className="text-xs font-mono font-bold text-gray-900 mt-0.5 block">R3-PMP-2024-001</span>
-              </div>
-
-              <div className="col-span-12 border-t border-gray-300 grid grid-cols-3 bg-gray-50/50">
-                <div className="p-3 border-r border-gray-300">
-                  <span className="text-[9px] font-bold text-gray-400 uppercase block">11. Empanelment Date</span>
-                  <span className="text-xs font-bold text-gray-900 mt-0.5 block">{slip.generatedAt}</span>
-                </div>
-                <div className="p-3 border-r border-gray-300">
-                  <span className="text-[9px] font-bold text-gray-400 uppercase block">12. Period of Validity</span>
-                  <span className="text-xs font-bold text-gray-900 mt-0.5 block">Until {expiry}</span>
-                </div>
-                <div className="p-3">
-                  <span className="text-[9px] font-bold text-gray-400 uppercase block">13. Liveness Check</span>
-                  <span className="text-xs font-bold text-emerald-700 mt-0.5 block">VERIFIED ✓</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* PART III - BENEFIT PACKAGE SUMMARY */}
-          <div className="border border-gray-300 bg-white rounded-lg overflow-hidden shadow-sm">
-            <div className="bg-gray-100 border-b border-gray-300 px-4 py-1.5">
-              <span className="text-[10px] font-extrabold text-gray-700 uppercase tracking-wider">PART III - YAKAP BENEFIT SCHEDULE</span>
-            </div>
-            
-            <div className="grid grid-cols-3 divide-x divide-gray-300 text-xs">
-              <div className="p-3 text-center">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">Annual Allocation</span>
-                <span className="text-sm font-black text-gray-900 mt-1 block">₱{((member as any).yakapBenefit?.totalAllotment || 2000).toLocaleString()}</span>
-              </div>
-              <div className="p-3 text-center">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block">Availed Amount</span>
-                <span className="text-sm font-extrabold text-amber-600 mt-1 block">₱{((member as any).yakapBenefit?.usedAmount || 0).toLocaleString()}</span>
-              </div>
-              <div className="p-3 text-center bg-emerald-50/10">
-                <span className="text-[9px] font-bold text-emerald-800 uppercase block">Remaining Balance</span>
-                <span className="text-sm font-black text-emerald-600 mt-1 block">₱{remaining.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* PART IV - AUTHORIZATION & ATTESTATION */}
-          <div className="border border-gray-300 bg-white rounded-lg overflow-hidden shadow-sm p-4">
-            <p className="text-[9px] font-extrabold text-gray-700 uppercase tracking-wider mb-3">PART IV - AUTHORIZATION & DIGITAL ATTESTATION</p>
-            <div className="grid grid-cols-2 gap-6 text-xs">
-              <div>
-                <span className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Member / Patient Representative</span>
-                <div className="border-b border-gray-300 h-10 flex items-end pb-1 font-mono text-[10px] text-emerald-700 font-bold">
-                  BIOMETRIC SIGN-OFF (FACE CHECK)
-                </div>
-                <span className="text-[10px] font-bold text-gray-800 block uppercase mt-1.5">{member.firstName} {member.lastName}</span>
-                <span className="text-[9px] text-gray-400">Timestamp: {slip.generatedAt}</span>
-              </div>
-              <div>
-                <span className="text-[9px] font-bold text-gray-400 uppercase block mb-1">Attesting Facility Officer</span>
-                <div className="border-b border-gray-300 h-10 flex items-end pb-1 font-mono text-[10px] text-blue-700 font-bold">
-                  DIGITAL SIGNATURE SECURED (EMR-PHIC)
-                </div>
-                <span className="text-[10px] font-bold text-gray-800 block mt-1.5">PCU CLINIC ADMINISTRATOR</span>
-                <span className="text-[9px] text-gray-400">University of the Assumption Clinic</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Form Disclaimer */}
-          <div className="rounded-lg p-3.5 border border-[#FFCD00]/50 bg-[#FFCD00]/5 text-gray-800 text-[10px] leading-relaxed shadow-sm">
-            <span className="font-extrabold text-emerald-800">ATTESTATION DISCLAIMER: </span>
-            This document serves as the official Yakap UACAP Empanelment Slip (YES Slip) verifying registered status for primary care benefits with the Philippine Health Insurance Corporation. The empanelment details contained herein have been synchronized with the PHIC UACAP Registry Server. Present this slip or your PIN card to receive Gamot (prescriptions) and Lab allocations at accredited facilities.
-          </div>
-
-          {/* Barcode & Metadata */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-            <div className="flex items-end gap-0.5 opacity-40">
-              {Array.from({ length: 42 }).map((_, i) => (
-                <div key={i} className="bg-black"
-                  style={{ width: i % 4 === 0 ? 3 : 1.5, height: i % 6 === 0 ? 24 : i % 2 === 0 ? 18 : 10 }} />
-              ))}
-            </div>
-            <div className="text-right text-[9px] font-mono text-gray-400">
-              <p>TRACKING ID: {slip.number}-PHIC</p>
-              <p className="text-[8px] text-gray-300">PhilHealth YES Form v1.2 · UA-CLINIC-R3</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Action buttons */}
-      <div className="grid grid-cols-3 gap-3 no-print">
-        <button id="print-yes-slip-btn" onClick={handlePrint}
-          className="btn-secondary justify-center">
-          <Printer className="w-4 h-4" /> Print
-        </button>
-        <button id="save-yes-slip-btn" onClick={handleSave}
-          className="btn-secondary justify-center">
-          <Download className="w-4 h-4" /> Save
-        </button>
-        <button id="done-empanelment-btn" onClick={onDone}
-          className="btn-primary justify-center"
-          style={{ background: '#10B981' }}>
-          <Check className="w-4 h-4" /> Done
-        </button>
-      </div>
-    </div>
-  );
+  return <YesSlip member={member} onDone={onDone} />;
 }
-
-// ════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // MAIN EMPANELMENT PAGE
-// ════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export default function EmpanelmentPage() {
   const [step,      setStep]      = useState(1);
   const [patient,   setPatient]   = useState<Member | null>(null);

@@ -1,0 +1,205 @@
+[
+  {
+    "id": "audit-001",
+    "timestamp": "2026-05-01T08:00:00+08:00",
+    "actionType": "RESTOCK",
+    "actor": "Admin",
+    "actorRole": "Pharmacist",
+    "description": "Restocked Amoxicillin 500mg Capsule",
+    "metadata": {
+      "medicineId": "med-001",
+      "genericName": "Amoxicillin",
+      "quantityAdded": 100,
+      "previousStock": 80,
+      "newStock": 180
+    }
+  },
+  {
+    "id": "audit-002",
+    "timestamp": "2026-05-01T08:05:00+08:00",
+    "actionType": "RESTOCK",
+    "actor": "Admin",
+    "actorRole": "Pharmacist",
+    "description": "Restocked Paracetamol 500mg Tablet",
+    "metadata": {
+      "medicineId": "med-009",
+      "genericName": "Paracetamol",
+      "quantityAdded": 200,
+      "previousStock": 5,
+      "newStock": 205
+    }
+  },
+  {
+    "id": "audit-003",
+    "timestamp": "2026-05-12T09:45:00+08:00",
+    "actionType": "PRESCRIPTION_FINALIZED",
+    "actor": "Dr. Rosa Lim, MD",
+    "actorRole": "Physician",
+    "description": "Prescription RX-2026-001-UPDHS finalized for Maria Cruz Santos",
+    "metadata": {
+      "prescriptionId": "rx-001",
+      "prescriptionNumber": "RX-2026-001-UPDHS",
+      "memberPin": "01-234567890-1",
+      "memberName": "Maria Cruz Santos",
+      "itemCount": 2,
+      "totalAmount": 203.50
+    }
+  },
+  {
+    "id": "audit-004",
+    "timestamp": "2026-05-12T09:45:00+08:00",
+    "actionType": "STOCK_DEDUCTED",
+    "actor": "System",
+    "actorRole": "System",
+    "description": "Stock deducted: Amoxicillin 500mg (-21 units) for RX-2026-001-UPDHS",
+    "metadata": {
+      "medicineId": "med-001",
+      "genericName": "Amoxicillin",
+      "quantityDeducted": 21,
+      "previousStock": 201,
+      "newStock": 180,
+      "prescriptionNumber": "RX-2026-001-UPDHS"
+    }
+  },
+  {
+    "id": "audit-005",
+    "timestamp": "2026-05-12T09:45:01+08:00",
+    "actionType": "STOCK_DEDUCTED",
+    "actor": "System",
+    "actorRole": "System",
+    "description": "Stock deducted: Paracetamol 500mg (-10 units) for RX-2026-001-UPDHS",
+    "metadata": {
+      "medicineId": "med-009",
+      "genericName": "Paracetamol",
+      "quantityDeducted": 10,
+      "previousStock": 205,
+      "newStock": 195,
+      "prescriptionNumber": "RX-2026-001-UPDHS"
+    }
+  },
+  {
+    "id": "audit-006",
+    "timestamp": "2026-05-15T14:00:00+08:00",
+    "actionType": "RESTOCK",
+    "actor": "Admin",
+    "actorRole": "Pharmacist",
+    "description": "Restocked Metformin HCl 500mg Tablet",
+    "metadata": {
+      "medicineId": "med-002",
+      "genericName": "Metformin HCl",
+      "quantityAdded": 150,
+      "previousStock": 0,
+      "newStock": 150
+    }
+  },
+  {
+    "id": "audit-007",
+    "timestamp": "2026-06-01T14:20:00+08:00",
+    "actionType": "PRESCRIPTION_FINALIZED",
+    "actor": "Dr. Pedro Ocampo, MD, FPCP",
+    "actorRole": "Physician",
+    "description": "Prescription RX-2026-002-ADMU finalized for Ana Bautista Garcia",
+    "metadata": {
+      "prescriptionId": "rx-002",
+      "prescriptionNumber": "RX-2026-002-ADMU",
+      "memberPin": "03-456789012-3",
+      "memberName": "Ana Bautista Garcia",
+      "itemCount": 2,
+      "totalAmount": 549.00
+    }
+  },
+  {
+    "id": "audit-008",
+    "timestamp": "2026-06-01T14:20:00+08:00",
+    "actionType": "STOCK_DEDUCTED",
+    "actor": "System",
+    "actorRole": "System",
+    "description": "Stock deducted: Amlodipine 5mg (-30 units) for RX-2026-002-ADMU",
+    "metadata": {
+      "medicineId": "med-003",
+      "genericName": "Amlodipine Besylate",
+      "quantityDeducted": 30,
+      "previousStock": 150,
+      "newStock": 120,
+      "prescriptionNumber": "RX-2026-002-ADMU"
+    }
+  },
+  {
+    "id": "audit-009",
+    "timestamp": "2026-06-01T14:20:01+08:00",
+    "actionType": "STOCK_DEDUCTED",
+    "actor": "System",
+    "actorRole": "System",
+    "description": "Stock deducted: Metformin HCl 500mg (-60 units) for RX-2026-002-ADMU",
+    "metadata": {
+      "medicineId": "med-002",
+      "genericName": "Metformin HCl",
+      "quantityDeducted": 60,
+      "previousStock": 210,
+      "newStock": 150,
+      "prescriptionNumber": "RX-2026-002-ADMU"
+    }
+  },
+  {
+    "id": "audit-010",
+    "timestamp": "2026-06-10T09:00:00+08:00",
+    "actionType": "RESTOCK",
+    "actor": "Admin",
+    "actorRole": "Pharmacist",
+    "description": "Emergency restock: Clarithromycin 500mg Tablet — stock ran out",
+    "metadata": {
+      "medicineId": "med-007",
+      "genericName": "Clarithromycin",
+      "quantityAdded": 50,
+      "previousStock": 0,
+      "newStock": 50
+    }
+  },
+  {
+    "id": "audit-011",
+    "timestamp": "2026-06-15T10:35:00+08:00",
+    "actionType": "PRESCRIPTION_FINALIZED",
+    "actor": "Dr. Emmanuel Buenaventura, MD",
+    "actorRole": "Physician",
+    "description": "Prescription RX-2026-003-USTPH finalized for Josephine Reyes Dela Cruz",
+    "metadata": {
+      "prescriptionId": "rx-003",
+      "prescriptionNumber": "RX-2026-003-USTPH",
+      "memberPin": "07-890123456-7",
+      "memberName": "Josephine Reyes Dela Cruz",
+      "itemCount": 3,
+      "totalAmount": 473.00
+    }
+  },
+  {
+    "id": "audit-012",
+    "timestamp": "2026-06-15T10:35:01+08:00",
+    "actionType": "STOCK_DEDUCTED",
+    "actor": "System",
+    "actorRole": "System",
+    "description": "Stock deducted: Clarithromycin 500mg (-50 units) for RX-2026-003-USTPH — now out of stock",
+    "metadata": {
+      "medicineId": "med-007",
+      "genericName": "Clarithromycin",
+      "quantityDeducted": 50,
+      "previousStock": 50,
+      "newStock": 0,
+      "prescriptionNumber": "RX-2026-003-USTPH"
+    }
+  },
+  {
+    "id": "audit-013",
+    "timestamp": "2026-06-20T08:30:00+08:00",
+    "actionType": "RESTOCK",
+    "actor": "Admin",
+    "actorRole": "Pharmacist",
+    "description": "Restocked Atorvastatin Calcium 20mg Tablet — low stock",
+    "metadata": {
+      "medicineId": "med-005",
+      "genericName": "Atorvastatin Calcium",
+      "quantityAdded": 80,
+      "previousStock": 8,
+      "newStock": 88
+    }
+  }
+]

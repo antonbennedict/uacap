@@ -1,0 +1,78 @@
+[
+  {
+    "id": "lab-001",
+    "memberPin": "01-234567890-1",
+    "memberName": "Maria Clara Santos",
+    "clinicId": "clinic-001",
+    "testType": "CBC",
+    "requestedDate": "2026-06-15T09:15:00Z",
+    "resultDate": "2026-06-15T11:30:00Z",
+    "findings": {
+      "WBC": 7.2,
+      "RBC": 4.5,
+      "Hemoglobin": 14.2,
+      "Hematocrit": 42.5,
+      "MCV": 94.4,
+      "MCH": 31.6,
+      "MCHC": 33.4,
+      "Platelets": 250,
+      "Neutrophils": 65,
+      "Lymphocytes": 28
+    },
+    "narrative": "CBC results within normal limits. No anemia detected.",
+    "status": "Verified",
+    "encodedBy": "Lab Officer Cruz"
+  },
+  {
+    "id": "lab-002",
+    "memberPin": "03-456789012-3",
+    "memberName": "Ana Mariz Garcia",
+    "clinicId": "clinic-001",
+    "testType": "Blood Chemistry",
+    "requestedDate": "2026-06-10T10:45:00Z",
+    "resultDate": "2026-06-11T09:00:00Z",
+    "findings": {
+      "FBS": 188,
+      "Creatinine": 0.9,
+      "UricAcid": 5.2,
+      "SGPT": 32,
+      "SGOT": 28,
+      "BUN": 18
+    },
+    "narrative": "Elevated fasting blood sugar consistent with poorly controlled DM. Renal and hepatic panels within normal limits.",
+    "status": "Verified",
+    "encodedBy": "Lab Officer Cruz"
+  },
+  {
+    "id": "lab-003",
+    "memberPin": "03-456789012-3",
+    "memberName": "Ana Mariz Garcia",
+    "clinicId": "clinic-001",
+    "testType": "Lipid Profile",
+    "requestedDate": "2026-06-10T10:45:00Z",
+    "resultDate": "2026-06-11T09:30:00Z",
+    "findings": {
+      "TotalCholesterol": 220,
+      "LDL": 145,
+      "HDL": 42,
+      "Triglycerides": 185,
+      "VLDL": 37
+    },
+    "narrative": "Borderline high total cholesterol and LDL. Low HDL. Dyslipidemia present — advise dietary modification and monitor.",
+    "status": "Verified",
+    "encodedBy": "Lab Officer Cruz"
+  },
+  {
+    "id": "lab-004",
+    "memberPin": "02-345678901-2",
+    "memberName": "Juan dela Cruz Reyes",
+    "clinicId": "clinic-001",
+    "testType": "Chest X-Ray",
+    "requestedDate": "2026-06-20T08:00:00Z",
+    "resultDate": "2026-06-20T10:00:00Z",
+    "findings": {},
+    "narrative": "Cardiomegaly noted. Increased bronchovascular markings bilaterally. No pneumonic infiltrates. No pleural effusion.",
+    "status": "Verified",
+    "encodedBy": "Rad Tech Bautista"
+  }
+]

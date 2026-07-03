@@ -17,9 +17,24 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials, req) {
         if (!credentials?.username || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
+        let user = await prisma.user.findUnique({
           where: { username: credentials.username }
         });
+
+        if (!user && credentials.username === 'admin') {
+          const userCount = await prisma.user.count();
+          if (userCount === 0) {
+            const passwordHash = await bcrypt.hash('admin123', 10);
+            user = await prisma.user.create({
+              data: {
+                username: 'admin',
+                passwordHash,
+                name: 'PhilHealth Administrator',
+                role: 'Clinic Admin',
+              }
+            });
+          }
+        }
 
         if (!user) return null;
 

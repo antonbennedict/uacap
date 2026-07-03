@@ -19,7 +19,9 @@ export async function GET(request: Request) {
       OR: [
         { firstName: { contains: search, mode: 'insensitive' as const } },
         { lastName: { contains: search, mode: 'insensitive' as const } },
-        { philhealthPin: { contains: search, mode: 'insensitive' as const } }
+        { philhealthPin: { contains: search, mode: 'insensitive' as const } },
+        { idNumber: { contains: search, mode: 'insensitive' as const } },
+        { department: { contains: search, mode: 'insensitive' as const } },
       ]
     } : {};
 
@@ -30,15 +32,20 @@ export async function GET(request: Request) {
         orderBy: { [sortBy]: sortOrder },
         skip,
         take: limit,
-        select: { // Payload Minimization: Only fetch what the grid needs
+        select: {
           id: true,
           philhealthPin: true,
           firstName: true,
           lastName: true,
+          middleName: true,
           clientType: true,
           packageType: true,
           sex: true,
           mobileNumber: true,
+          memberType: true,
+          department: true,
+          idNumber: true,
+          enrollmentStatus: true,
           createdAt: true,
         }
       }),

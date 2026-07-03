@@ -14,11 +14,11 @@ export async function POST(request: Request) {
     let skippedCount = 0;
 
     const mapNulls = (val: any) => {
-      if (!val || val === 'NONE') return null;
+      if (!val || val === 'NONE' || val === 'N/A' || val === '') return null;
       return val;
     };
     const mapDates = (val: any) => {
-      if (!val || val === '1900-01-01' || val === 'NONE') return null;
+      if (!val || val === '1900-01-01' || val === 'NONE' || val === '') return null;
       return new Date(val);
     };
 
@@ -59,6 +59,11 @@ export async function POST(request: Request) {
               sponsorExtension: mapNulls(row.sponsorExtension),
               sponsorDateOfBirth: mapDates(row.sponsorDateOfBirth),
               sponsorSex: mapNulls(row.sponsorSex),
+              // New classification fields
+              memberType: mapNulls(row.memberType) ?? mapNulls(row.type),
+              department: mapNulls(row.department),
+              idNumber: mapNulls(row.idNumber) ?? mapNulls(row.studentNumber) ?? mapNulls(row.employeeId),
+              enrollmentStatus: mapNulls(row.enrollmentStatus) ?? mapNulls(row.status) ?? 'Active',
             }
           });
           insertedCount++;

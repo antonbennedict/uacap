@@ -6,8 +6,8 @@ import type { Member, TriagePriority } from '@/lib/types';
 import { useEffect } from 'react';
 import {
   LayoutDashboard, Users, Stethoscope, AlertTriangle,
-  Clock, ChevronRight, Plus, Activity, ClipboardList, Wallet,
-  CheckCircle, Timer, UserCheck, Zap, Download
+  Clock, ChevronRight, ChevronLeft, Plus, Activity, ClipboardList, Wallet,
+  CheckCircle, Timer, UserCheck, Zap, Download, Upload, Database
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDateTime } from '@/lib/utils';
@@ -26,6 +26,21 @@ const PRIORITY_COLORS: Record<TriagePriority, string> = {
   Low: 'bg-gray-100 text-gray-600 border-gray-200',
 };
 
+type RecentMember = {
+  id: string;
+  philhealthPin: string;
+  firstName: string;
+  lastName: string;
+  middleName: string | null;
+  clientType: string;
+  memberType: string | null;
+  department: string | null;
+  idNumber: string | null;
+  enrollmentStatus: string | null;
+  sex: string;
+  createdAt: string;
+};
+
 export default function DashboardPage() {
   const triageEntries: any[] = [];
   const fpeRecords: any[] = [];
@@ -36,6 +51,9 @@ export default function DashboardPage() {
   const updateTriageStatus = (id: string, status: string, physician?: string) => {};
 
   const [auditLog, setAuditLog] = useState<any[]>([]);
+  const [recentImports, setRecentImports] = useState<RecentMember[]>([]);
+  const [loadingImports, setLoadingImports] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [showAddTriage, setShowAddTriage] = useState(false);
   const [newEntry, setNewEntry] = useState({ memberSearch: '', complaint: '', priority: 'Normal' as TriagePriority });
@@ -66,22 +84,48 @@ export default function DashboardPage() {
         }
       } catch (error) {}
     }
+
+    async function fetchRecentImports() {
+      try {
+        setLoadingImports(true);
+        const response = await fetch('/api/members/recent?limit=500');
+        const data = await response.json();
+        if (data.members) {
+          setRecentImports(data.members);
+        }
+      } catch (error) {
+        console.error('Failed to fetch recent imports:', error);
+      } finally {
+        setLoadingImports(false);
+      }
+    }
+
     fetchMembers();
     fetchLogs();
+    fetchRecentImports();
     
     // Fetch Zustand store dashboard metrics
     useAppStore.getState().fetchDashboardMetrics();
   }, []);
 
+
   const { dashboardMetrics } = useAppStore();
 
   // Metrics
-  const waiting = triageEntries.filter(t => t.status === 'Waiting').length;
-  const inConsult = triageEntries.filter(t => t.status === 'In-Consult').length;
-  const done = triageEntries.filter(t => t.status === 'Done').length;
-  const lowStock = medicines.filter(m => getMedicineStatus(m.quantity) === 'Low' || getMedicineStatus(m.quantity) === 'Out of Stock').length;
-  const totalCapitation = allMembers.reduce((s, m) => s + ((m as any).yakapBenefit?.totalAllotment ?? 0), 0);
-  const usedCapitation = allMembers.reduce((s, m) => s + ((m as any).yakapBenefit?.usedAmount ?? 0), 0);
+  const waiting = dashboardMetrics?.waitingTriage ?? 0;
+  const inConsult = dashboardMetrics?.activeConsults ?? 0;
+  const done = dashboardMetrics?.capitationPerformance?.yearEndTrancheCount ?? 0;
+  const lowStock = 0;
+  
+  const totalCapitation = allMembers.length * 5000;
+  const initialTranches = (dashboardMetrics?.capitationPerformance?.initialTrancheCount ?? 0) * 2000;
+  const yearEndTranches = (dashboardMetrics?.capitationPerformance?.yearEndTrancheCount ?? 0) * 3000;
+  const usedCapitation = initialTranches + yearEndTranches;
+
+  // Masterlist pagination
+  const PAGE_SIZE = 10;
+  const totalPages = Math.ceil(recentImports.length / PAGE_SIZE);
+  const pagedImports = recentImports.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const filteredMembers = allMembers.filter(m => {
     const q = memberSearch.toLowerCase();
@@ -161,7 +205,7 @@ export default function DashboardPage() {
         <div className="card-glass relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="p-5 flex justify-between items-start border-l-4 border-purple-500">
-            <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Records</p><p className="text-3xl font-black text-gray-900 tracking-tight">{soapNotes.length}</p></div>
+            <div><p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Records</p><p className="text-3xl font-black text-gray-900 tracking-tight">{allMembers.length}</p></div>
             <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500 shadow-inner group-hover:scale-110 transition-transform"><ClipboardList className="w-5 h-5" /></div>
           </div>
         </div>
@@ -177,71 +221,145 @@ export default function DashboardPage() {
 
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Triage Queue */}
+        {/* Masterlist */}
         <div className="xl:col-span-2 card-glass p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900 flex items-center gap-2"><Activity className="w-4 h-4 text-gray-400" /> Active Triage Queue</h2>
-            <button onClick={() => setShowAddTriage(true)} className="text-xs btn-secondary py-1.5 px-3"><Plus className="w-3 h-3" /> Add Patient</button>
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+              <Database className="w-4 h-4 text-gray-400" /> Masterlist
+            </h2>
+            <div className="flex gap-2">
+              <Link href="/masterlist" className="btn-secondary text-xs py-1.5 px-3">
+                <Upload className="w-3 h-3" /> Import CSV
+              </Link>
+              <Link href="/reports" className="btn-secondary text-xs py-1.5 px-3">
+                View All
+              </Link>
+            </div>
           </div>
 
-          {triageEntries.length === 0 ? (
-            <div className="text-center py-10 text-gray-400"><Users className="w-10 h-10 mx-auto mb-2 opacity-30" /><p className="text-sm">No patients in queue</p></div>
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-gray-100">
-              <table className="data-table">
-                <thead className="bg-slate-50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500">
+          <div className="overflow-hidden rounded-xl border border-gray-100">
+            <table className="data-table">
+              <thead className="bg-slate-50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500">
+                <tr>
+                  <th className="px-4 py-3 font-semibold rounded-tl-xl text-left">Full Name</th>
+                  <th className="px-4 py-3 font-semibold text-left">Type</th>
+                  <th className="px-4 py-3 font-semibold text-left">Department</th>
+                  <th className="px-4 py-3 font-semibold text-left">PHIC PIN</th>
+                  <th className="px-4 py-3 font-semibold text-left">ID Number</th>
+                  <th className="px-4 py-3 font-semibold text-right rounded-tr-xl">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {loadingImports ? (
                   <tr>
-                    <th className="px-4 py-3 font-semibold rounded-tl-xl text-left">Patient</th>
-                    <th className="px-4 py-3 font-semibold text-left">Chief Complaint</th>
-                    <th className="px-4 py-3 font-semibold text-left">Priority</th>
-                    <th className="px-4 py-3 font-semibold text-left">Status</th>
-                    <th className="px-4 py-3 font-semibold text-left">Physician</th>
-                    <th className="px-4 py-3 font-semibold text-right rounded-tr-xl">Actions</th>
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                        Loading masterlist...
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {triageEntries.map(entry => (
-                    <tr key={entry.id} className="hover:bg-blue-50/40 transition-colors group">
+                ) : recentImports.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center">
+                      <div className="flex flex-col items-center gap-2 text-gray-400">
+                        <Users className="w-8 h-8 opacity-30" />
+                        <p className="text-sm">No members imported yet.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  pagedImports.map(member => (
+                    <tr key={member.id} className="hover:bg-blue-50/20 transition-colors group">
                       <td className="px-4 py-3">
-                        <p className="font-bold text-sm text-gray-900">{entry.memberName}</p>
-                        <p className="text-xs font-mono text-blue-600 font-medium">{entry.memberPin}</p>
-                        <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{new Date(entry.arrivalTime).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
+                        <p className="font-bold text-sm text-gray-900">
+                          {member.lastName}, {member.firstName} {member.middleName ? member.middleName[0] + '.' : ''}
+                        </p>
+                        <p className="text-xs text-gray-400">{member.sex}</p>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 max-w-[160px] truncate">{entry.chiefComplaint}</td>
                       <td className="px-4 py-3">
-                        <span className={`badge border text-[10px] uppercase font-bold tracking-wider px-2 py-1 ${PRIORITY_COLORS[entry.priority as TriagePriority]}`}>
-                          {entry.priority}
+                        <span className={`badge text-[10px] py-0.5 px-2 ${
+                          member.memberType === 'Student' ? 'badge-blue' :
+                          member.memberType === 'Staff' || member.memberType === 'Faculty' ? 'badge-green' :
+                          member.clientType === 'MEMBER' ? 'badge-blue' : 'badge-yellow'
+                        }`}>
+                          {member.memberType || member.clientType}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={entry.status}
-                          onChange={(e) => updateTriageStatus(entry.id, e.target.value as any, entry.assignedPhysician || undefined)}
-                          className={`text-xs border rounded-lg px-2 py-1.5 font-bold cursor-pointer transition-colors focus:ring-2 focus:ring-blue-500/20 focus:outline-none ${
-                            entry.status === 'Waiting' ? 'text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100' :
-                            entry.status === 'In-Consult' ? 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100' :
-                            entry.status === 'Done' ? 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100' :
-                            'text-gray-600 bg-gray-50 border-gray-200'
-                          }`}
-                        >
-                          {['Waiting', 'In-Consult', 'Done', 'Referred'].map(s => <option key={s} className="bg-white text-gray-900">{s}</option>)}
-                        </select>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {member.department || <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-600 font-medium">
-                        {entry.assignedPhysician || <span className="text-gray-300 italic">Unassigned</span>}
+                      <td className="px-4 py-3 font-mono text-xs text-blue-700 font-semibold">
+                        {member.philhealthPin}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                        {member.idNumber || <span className="text-gray-300">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Link href={`/consultation?pin=${entry.memberPin}`} className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-2 py-1.5 rounded-lg transition-colors font-semibold">
-                          Consult <ChevronRight className="w-3 h-3" />
-                        </Link>
+                        <span className={`badge text-[10px] py-0.5 px-2 ${
+                          member.enrollmentStatus === 'Active' ? 'badge-green' :
+                          member.enrollmentStatus === 'Inactive' ? 'badge-red' :
+                          member.enrollmentStatus === 'Graduated' ? 'badge-blue' :
+                          'badge-green'
+                        }`}>
+                          {member.enrollmentStatus || 'Active'}
+                        </span>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {!loadingImports && recentImports.length > 0 && (
+            <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+              <span>
+                Showing {((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, recentImports.length)} of {recentImports.length} records
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  // Show pages around current
+                  let page: number;
+                  if (totalPages <= 5) {
+                    page = i + 1;
+                  } else if (currentPage <= 3) {
+                    page = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    page = totalPages - 4 + i;
+                  } else {
+                    page = currentPage - 2 + i;
+                  }
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-7 h-7 rounded-lg text-xs font-semibold transition-colors ${
+                        currentPage === page
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'hover:bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -317,6 +435,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+
 
       {/* Add Triage Modal */}
       {showAddTriage && (

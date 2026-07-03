@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Users, Server, CheckCircle, Loader2, Shield, Database, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import masterlistData from '@/lib/data/masterlist.json';
 
 const INSTITUTION = {
   id: 'ua',
@@ -14,8 +15,32 @@ const INSTITUTION = {
 
 export default function MasterlistPage() {
   const { importMasterlistEntries } = useAppStore();
-  const masterlistEntries: any[] = [];
+  const [localPins, setLocalPins] = useState<Set<string>>(new Set());
 
+  const fetchLocalMembers = async () => {
+    try {
+      const res = await fetch('/api/members');
+      const data = await res.json();
+      if (data.members) {
+        const pins = new Set<string>(data.members.map((m: any) => m.philhealthPin));
+        setLocalPins(pins);
+      }
+    } catch (e) {
+      console.error('Failed to fetch local members:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchLocalMembers();
+  }, []);
+
+  const masterlistEntries = masterlistData.map((e: any) => {
+    const isImported = localPins.has(e.philhealthPin);
+    return {
+      ...e,
+      importedAt: isImported ? 'imported' : null
+    };
+  });
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -75,15 +100,38 @@ export default function MasterlistPage() {
     setSelectedIds(pendingEntries.map(e => e.id));
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (selectedIds.length === 0) { toast.error('Select at least one profile to import.'); return; }
     setIsImporting(true);
-    setTimeout(() => {
-      importMasterlistEntries(selectedIds);
+
+    const selectedMembersData = masterlistData
+      .filter(entry => selectedIds.includes(entry.id))
+      .map(entry => ({
+        philhealthPin: entry.philhealthPin,
+        clientType: 'MEMBER',
+        lastName: entry.lastName,
+        firstName: entry.firstName,
+        middleName: entry.middleName,
+        dateOfBirth: entry.dateOfBirth,
+        sex: entry.sex.toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
+        hasConsent: true,
+        packageType: 'KONSULTA',
+        email: entry.email,
+        memberType: entry.type,
+        department: entry.department,
+        idNumber: entry.studentNumber || entry.employeeId,
+      }));
+
+    try {
+      await importMasterlistEntries(selectedMembersData);
+      await fetchLocalMembers();
       setSelectedIds([]);
-      setIsImporting(false);
       toast.success(`${selectedIds.length} profiles successfully imported to the local patient registry!`);
-    }, 800);
+    } catch (err: any) {
+      toast.error('Import failed');
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   return (
