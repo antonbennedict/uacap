@@ -22,54 +22,66 @@ export async function POST(request: Request) {
       return new Date(val);
     };
 
-    await prisma.$transaction(async (tx) => {
-      for (const row of rows) {
-        if (!row?.philhealthPin || !row?.lastName || !row?.firstName || !row?.dateOfBirth) {
-          skippedCount++;
-          continue;
-        }
-
-        const existing = await tx.member.findUnique({
-          where: { philhealthPin: row.philhealthPin }
-        });
-
-        if (existing) {
-          skippedCount++;
-        } else {
-          await tx.member.create({
-            data: {
-              philhealthPin: row.philhealthPin,
-              packageType: mapNulls(row.packageType) ?? 'KONSULTA',
-              hasConsent: String(row.hasConsent).toLowerCase() === 'true',
-              clientType: mapNulls(row.clientType) ?? 'MEMBER',
-              lastName: row.lastName,
-              firstName: row.firstName,
-              middleName: mapNulls(row.middleName),
-              extension: mapNulls(row.extension),
-              dateOfBirth: new Date(row.dateOfBirth),
-              sex: row.sex ?? 'MALE',
-              mobileNumber: mapNulls(row.mobileNumber),
-              barangay: mapNulls(row.barangay),
-              cityMunicipality: mapNulls(row.cityMunicipality),
-              province: mapNulls(row.province),
-              sponsorPin: mapNulls(row.sponsorPin),
-              sponsorLastName: mapNulls(row.sponsorLastName),
-              sponsorFirstName: mapNulls(row.sponsorFirstName),
-              sponsorMiddleName: mapNulls(row.sponsorMiddleName),
-              sponsorExtension: mapNulls(row.sponsorExtension),
-              sponsorDateOfBirth: mapDates(row.sponsorDateOfBirth),
-              sponsorSex: mapNulls(row.sponsorSex),
-              // New classification fields
-              memberType: mapNulls(row.memberType) ?? mapNulls(row.type),
-              department: mapNulls(row.department),
-              idNumber: mapNulls(row.idNumber) ?? mapNulls(row.studentNumber) ?? mapNulls(row.employeeId),
-              enrollmentStatus: mapNulls(row.enrollmentStatus) ?? mapNulls(row.status) ?? 'Active',
-            }
-          });
-          insertedCount++;
-        }
-      }
+    // Fetch all existing PhilHealth PINs in a single query to check for duplicates efficiently
+    const existingMembers = await prisma.member.findMany({
+      select: { philhealthPin: true }
     });
+    const existingPins = new Set(existingMembers.map(m => m.philhealthPin));
+
+    const toInsert: any[] = [];
+    const seenInBatch = new Set<string>();
+
+    for (const row of rows) {
+      if (!row?.philhealthPin || !row?.lastName || !row?.firstName || !row?.dateOfBirth) {
+        skippedCount++;
+        continue;
+      }
+
+      const pin = row.philhealthPin.trim();
+
+      // Check if duplicate in DB or already in this batch
+      if (existingPins.has(pin) || seenInBatch.has(pin)) {
+        skippedCount++;
+        continue;
+      }
+
+      seenInBatch.add(pin);
+      toInsert.push({
+        philhealthPin: pin,
+        packageType: mapNulls(row.packageType) ?? 'KONSULTA',
+        hasConsent: String(row.hasConsent).toLowerCase() === 'true',
+        clientType: mapNulls(row.clientType) ?? 'MEMBER',
+        lastName: row.lastName,
+        firstName: row.firstName,
+        middleName: mapNulls(row.middleName),
+        extension: mapNulls(row.extension),
+        dateOfBirth: new Date(row.dateOfBirth),
+        sex: row.sex ?? 'MALE',
+        mobileNumber: mapNulls(row.mobileNumber),
+        barangay: mapNulls(row.barangay),
+        cityMunicipality: mapNulls(row.cityMunicipality),
+        province: mapNulls(row.province),
+        sponsorPin: mapNulls(row.sponsorPin),
+        sponsorLastName: mapNulls(row.sponsorLastName),
+        sponsorFirstName: mapNulls(row.sponsorFirstName),
+        sponsorMiddleName: mapNulls(row.sponsorMiddleName),
+        sponsorExtension: mapNulls(row.sponsorExtension),
+        sponsorDateOfBirth: mapDates(row.sponsorDateOfBirth),
+        sponsorSex: mapNulls(row.sponsorSex),
+        memberType: mapNulls(row.memberType) ?? mapNulls(row.type),
+        department: mapNulls(row.department),
+        idNumber: mapNulls(row.idNumber) ?? mapNulls(row.studentNumber) ?? mapNulls(row.employeeId),
+        enrollmentStatus: mapNulls(row.enrollmentStatus) ?? mapNulls(row.status) ?? 'Active',
+      });
+      insertedCount++;
+    }
+
+    if (toInsert.length > 0) {
+      await prisma.member.createMany({
+        data: toInsert,
+        skipDuplicates: true,
+      });
+    }
 
     return NextResponse.json({ success: true, insertedCount, skippedCount });
   } catch (error: any) {
