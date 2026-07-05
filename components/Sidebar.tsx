@@ -35,18 +35,18 @@ const navGroups = [
     category: 'UACAP',
     items: [
       {
-        href: '/empanelment',
-        label: 'YAKAP Empanelment',
-        icon: ClipboardCheck,
-        description: 'PCU enrollment wizard',
-        color: '#14B8A6',
-      },
-      {
         href: '/fpe',
         label: 'FPE Encoding & Submit',
         icon: Stethoscope,
         description: 'First Patient Encounter',
         color: '#00843D',
+      },
+      {
+        href: '/empanelment',
+        label: 'YAKAP Empanelment',
+        icon: ClipboardCheck,
+        description: 'PCU enrollment wizard',
+        color: '#14B8A6',
       },
       {
         href: '/consultation',
