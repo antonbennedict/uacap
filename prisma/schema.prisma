@@ -201,5 +201,20 @@ model AuditLog {
   actionType  String
   description String
   actor       String
+  actorRole   String?
+  metadata    String?  // JSON serialized metadata
   timestamp   DateTime @default(now())
+}
+
+// 12. DISPATCH RECORDS
+model DispatchRecord {
+  id           String   @id @default(uuid())
+  sourceType   String   // 'FPE', 'Consultation', 'Prescription', 'LabResult'
+  sourceId     String
+  patientName  String
+  patientPin   String
+  description  String
+  actor        String
+  status       String   @default("Dispatched")
+  dispatchedAt DateTime @default(now())
 }

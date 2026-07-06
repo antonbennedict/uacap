@@ -139,7 +139,7 @@ export default function AuditLog() {
                     </div>
                     <p className="text-sm text-gray-700 mt-1 leading-snug">{entry.description}</p>
                     {/* Metadata */}
-                    {(entry.metadata.quantityAdded || entry.metadata.quantityDeducted) && (
+                    {entry.metadata && (entry.metadata.quantityAdded || entry.metadata.quantityDeducted) && (
                       <div className="flex gap-3 mt-1">
                         {entry.metadata.quantityAdded && (
                           <span className="text-xs text-emerald-600 font-semibold">

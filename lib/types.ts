@@ -136,12 +136,19 @@ export interface FPELifestyle {
 
 export interface FPERecord {
   id: string;
+  caseNo?: string;
+  memberId: string;
   memberPin: string;
-  clinicId: string;
+  clinicId?: string;
   encounterDate: string;
-  vitalSigns: FPEVitalSigns;
-  lifestyle: FPELifestyle;
-  medicalHistory: string;
+  effectivityYear?: number;
+  medicalSurgicalHistory: any;
+  familyPersonalHistory: any;
+  immunizations: any;
+  obGyneHistory?: any;
+  vitalsAndPhysicals: any;
+  ncdHighRiskAssessment: any;
+  riskLevel: string;
   status: 'Draft' | 'Encoded' | 'Dispatched';
   initialTrancheAmount?: number;
   dispatchedAt: string | null;

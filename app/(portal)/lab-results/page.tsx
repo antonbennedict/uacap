@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import type { Member, LabTestType, LabResult } from '@/lib/types';
-import { FlaskConical, Search, User, CheckCircle, AlertCircle } from 'lucide-react';
+import { FlaskConical, Search, User, CheckCircle, AlertCircle, UploadCloud, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
 
@@ -83,6 +83,8 @@ export default function LabResultsPage() {
   const [findings, setFindings] = useState<Record<string, string>>({});
   const [narrative, setNarrative] = useState('');
   const [encodedBy, setEncodedBy] = useState('Lab Officer Cruz');
+  const [isDispatching, setIsDispatching] = useState(false);
+  const [dispatchedLabIds, setDispatchedLabIds] = useState<string[]>([]);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
 
   useEffect(() => {
@@ -113,6 +115,30 @@ export default function LabResultsPage() {
     setSelectedTest(test);
     setFindings({});
     setNarrative('');
+  };
+
+  const handleDispatchLab = async (result: any) => {
+    setIsDispatching(true);
+    try {
+      await fetch('/api/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceType: 'LabResult',
+          sourceId: result.id,
+          patientName: result.memberName || `${selectedMember?.firstName} ${selectedMember?.lastName}`,
+          patientPin: result.memberPin || selectedMember?.philhealthPin || '',
+          description: `Lab Result: ${result.testType} — ${result.status}`,
+          actor: result.encodedBy || 'System',
+        }),
+      });
+      setDispatchedLabIds(prev => [...prev, result.id]);
+      toast.success('Lab result dispatched to PhilHealth!');
+    } catch (err) {
+      toast.error('Failed to dispatch lab result.');
+    } finally {
+      setIsDispatching(false);
+    }
   };
 
   const handleSave = () => {
@@ -265,6 +291,25 @@ export default function LabResultsPage() {
                     <button onClick={() => { verifyLabResult(r.id); toast.success('Result verified!'); }}
                       className="mt-2 text-xs text-emerald-600 hover:underline flex items-center gap-1">
                       <CheckCircle className="w-3 h-3" /> Verify Result
+                    </button>
+                  )}
+                  {r.status === 'Verified' && (
+                    <button
+                      onClick={() => handleDispatchLab(r)}
+                      disabled={isDispatching || dispatchedLabIds.includes(r.id)}
+                      className={`mt-2 text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all w-full justify-center ${
+                        dispatchedLabIds.includes(r.id)
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                      }`}
+                    >
+                      {isDispatching ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Dispatching...</>
+                      ) : dispatchedLabIds.includes(r.id) ? (
+                        <><CheckCircle className="w-3 h-3" /> Dispatched</>
+                      ) : (
+                        <><UploadCloud className="w-3 h-3" /> Direct PHIC Dispatch</>
+                      )}
                     </button>
                   )}
                 </div>

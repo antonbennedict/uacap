@@ -7,7 +7,7 @@ import {
   UserCheck, Activity, Heart,
   ChevronRight, Bell, Settings, LogOut, Stethoscope,
   LayoutDashboard, Server, FlaskConical, ClipboardList, Users,
-  Shield, ClipboardCheck, Clock
+  Shield, ClipboardCheck, Clock, Pill, Package
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -61,6 +61,20 @@ const navGroups = [
         icon: FlaskConical,
         description: 'Diagnostics & findings',
         color: '#EF4444',
+      },
+      {
+        href: '/prescription-builder',
+        label: 'YAKAP Medicine (Rx)',
+        icon: Pill,
+        description: 'Prescriptions & allocations',
+        color: '#EC4899',
+      },
+      {
+        href: '/gamot',
+        label: 'GAMOT Inventory',
+        icon: Package,
+        description: 'Medicine allocations & stock',
+        color: '#F59E0B',
       },
     ],
   },
@@ -129,8 +143,8 @@ export default function Sidebar() {
       </div>
 
       {/* User info */}
-      <div className="px-3 py-3 mt-4">
-        <div className="px-4 py-3.5 rounded-xl border" style={{
+      <div className="px-3 py-1.5 mt-2">
+        <div className="px-3 py-2 rounded-xl border" style={{
           background: 'rgba(255,255,255,0.06)',
           border: '1px solid rgba(255,255,255,0.1)',
         }}>
@@ -140,10 +154,10 @@ export default function Sidebar() {
               {userInitials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-semibold truncate">{userName}</p>
+              <p className="text-white text-xs font-semibold truncate">{userName}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Shield className="w-2.5 h-2.5 text-emerald-400 flex-shrink-0" />
-                <p className="text-white/50 text-xs truncate">{userRole}</p>
+                <p className="text-white/50 text-[10px] truncate">{userRole}</p>
               </div>
             </div>
             <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0 ring-2 ring-emerald-400/20" />
@@ -152,10 +166,10 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-0 py-3 overflow-y-auto scrollbar-thin space-y-5">
+      <nav className="flex-1 px-0 py-1 space-y-2.5">
         {navGroups.map((group) => (
           <div key={group.category} className="space-y-1">
-            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest px-7 mb-1">
+            <p className="text-white/30 text-[9px] font-bold uppercase tracking-widest px-5 mb-0.5">
               {group.category}
             </p>
             <ul className="space-y-0.5">
@@ -172,24 +186,21 @@ export default function Sidebar() {
                         borderLeft: `3px solid ${item.color}`,
                         color: '#ffffff',
                         marginLeft: '0.75rem',
-                        paddingLeft: '0.75rem',
+                        paddingLeft: '0.5rem',
                         boxShadow: `0 4px 15px ${item.color}33`,
                       } : {}}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
                         isActive ? '' : 'group-hover:bg-white/10'
                       }`}
                         style={isActive ? { background: `${item.color}25` } : {}}>
-                        <Icon className="w-4 h-4 flex-shrink-0" style={isActive ? { color: item.color } : {}} />
+                        <Icon className="w-3.5 h-3.5 flex-shrink-0" style={isActive ? { color: item.color } : {}} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="block text-sm leading-tight">{item.label}</span>
-                        {isActive && (
-                          <span className="block text-xs text-white/50 leading-tight mt-0.5">{item.description}</span>
-                        )}
+                        <span className="block text-xs leading-tight">{item.label}</span>
                       </div>
                       {isActive && (
-                        <ChevronRight className="w-4 h-4 flex-shrink-0 opacity-70" style={{ color: item.color }} />
+                        <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 opacity-70" style={{ color: item.color }} />
                       )}
                     </Link>
                   </li>
@@ -201,38 +212,38 @@ export default function Sidebar() {
       </nav>
 
       {/* Bottom actions */}
-      <div className="border-t border-white/10 p-3 space-y-0.5">
+      <div className="border-t border-white/10 p-2 space-y-0.5">
         <Link href="/audit-log" className="sidebar-nav-link cursor-pointer group block">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-white/10">
-            <Clock className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-white/10">
+            <Clock className="w-3.5 h-3.5" />
           </div>
-          <span className="text-sm flex-1">Audit Log</span>
+          <span className="text-xs flex-1">Audit Log</span>
         </Link>
         <Link href="/settings" className="sidebar-nav-link cursor-pointer group block">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-white/10">
-            <Settings className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-white/10">
+            <Settings className="w-3.5 h-3.5" />
           </div>
-          <span className="text-sm">Settings</span>
+          <span className="text-xs">Settings</span>
         </Link>
         <button
           onClick={handleLogout}
           className="sidebar-nav-link w-full text-left group"
           style={{ color: '#fca5a5' }}
         >
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-red-500/10">
-            <LogOut className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-red-500/10">
+            <LogOut className="w-3.5 h-3.5" />
           </div>
-          <span className="text-sm">Log Out</span>
+          <span className="text-xs">Log Out</span>
         </button>
       </div>
 
       {/* PhilHealth branding */}
-      <div className="px-5 py-4 border-t border-white/5">
+      <div className="px-4 py-2 border-t border-white/5">
         <div className="flex items-center gap-2 opacity-40">
           <Activity className="w-3 h-3 text-emerald-400" />
-          <span className="text-white text-xs">PhilHealth YAKAP Program</span>
+          <span className="text-white text-[10px]">PhilHealth YAKAP Program</span>
         </div>
-        <p className="text-white/25 text-xs mt-0.5">v2026.1.0 · NCR Division</p>
+        <p className="text-white/25 text-[9px] mt-0.5">v2026.1.0 · NCR Division</p>
       </div>
     </aside>
   );

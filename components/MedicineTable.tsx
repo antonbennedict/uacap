@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
-import { getMedicineStatus, type Medicine } from '@/lib/types';
+import { type Medicine } from '@/lib/types';
 import { Plus, Minus, CheckCircle, AlertTriangle, XCircle, Search, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,6 +13,112 @@ interface MedicineTableProps {
 
 const ITEMS_PER_PAGE = 10;
 
+// YAKAP standard library for category lookup
+const DRUG_LIBRARY = [
+  // Anti-Infectious (21)
+  { genericName: 'Albendazole', category: 'Anti-Infectious' },
+  { genericName: 'Amoxicillin', category: 'Anti-Infectious' },
+  { genericName: 'Azithromycin', category: 'Anti-Infectious' },
+  { genericName: 'Cefixime', category: 'Anti-Infectious' },
+  { genericName: 'Cefuroxime', category: 'Anti-Infectious' },
+  { genericName: 'Ciprofloxacin', category: 'Anti-Infectious' },
+  { genericName: 'Clarithromycin', category: 'Anti-Infectious' },
+  { genericName: 'Clindamycin', category: 'Anti-Infectious' },
+  { genericName: 'Clotrimazole', category: 'Anti-Infectious' },
+  { genericName: 'Cloxacillin', category: 'Anti-Infectious' },
+  { genericName: 'Co-amoxiclav', category: 'Anti-Infectious' },
+  { genericName: 'Co-trimoxazole', category: 'Anti-Infectious' },
+  { genericName: 'Doxycycline', category: 'Anti-Infectious' },
+  { genericName: 'Erythromycin', category: 'Anti-Infectious' },
+  { genericName: 'Fluconazole', category: 'Anti-Infectious' },
+  { genericName: 'Ketoconazole', category: 'Anti-Infectious' },
+  { genericName: 'Mebendazole', category: 'Anti-Infectious' },
+  { genericName: 'Metronidazole', category: 'Anti-Infectious' },
+  { genericName: 'Nitrofurantoin', category: 'Anti-Infectious' },
+  { genericName: 'Oseltamivir', category: 'Anti-Infectious' },
+  { genericName: 'Tobramycin', category: 'Anti-Infectious' },
+
+  // Anti-Hypertensive & Cardiology (18)
+  { genericName: 'Amlodipine', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Atenolol', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Captopril', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Clonidine', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Diltiazem', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Enalapril', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Enalapril + Hydrochlorothiazide', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Hydrochlorothiazide', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Isosorbide Dinitrate', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Isosorbide Mononitrate', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Losartan', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Methyldopa', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Metoprolol', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Tamsulosin', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Telmisartan', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Telmisartan + Hydrochlorothiazide', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Valsartan', category: 'Anti-Hypertensive & Cardiology' },
+  { genericName: 'Valsartan + Hydrochlorothiazide', category: 'Anti-Hypertensive & Cardiology' },
+
+  // Anti-Asthma & COPD (8)
+  { genericName: 'Budesonide + Formoterol', category: 'Anti-Asthma & COPD' },
+  { genericName: 'Fluticasone + Salmeterol', category: 'Anti-Asthma & COPD' },
+  { genericName: 'Ipratropium', category: 'Anti-Asthma & COPD' },
+  { genericName: 'Ipratropium + Salbutamol', category: 'Anti-Asthma & COPD' },
+  { genericName: 'Montelukast', category: 'Anti-Asthma & COPD' },
+  { genericName: 'Prednisone', category: 'Anti-Asthma & COPD' },
+  { genericName: 'Salbutamol', category: 'Anti-Asthma & COPD' },
+  { genericName: 'Tiotropium', category: 'Anti-Asthma & COPD' },
+
+  // Anti-Diabetics (3)
+  { genericName: 'Dapagliflozin', category: 'Anti-Diabetics' },
+  { genericName: 'Gliclazide', category: 'Anti-Diabetics' },
+  { genericName: 'Metformin', category: 'Anti-Diabetics' },
+
+  // Anti-Dyslipidemia (4)
+  { genericName: 'Atorvastatin', category: 'Anti-Dyslipidemia' },
+  { genericName: 'Fenofibrate', category: 'Anti-Dyslipidemia' },
+  { genericName: 'Rosuvastatin', category: 'Anti-Dyslipidemia' },
+  { genericName: 'Simvastatin', category: 'Anti-Dyslipidemia' },
+
+  // Anti-Thrombotics (2)
+  { genericName: 'Aspirin', category: 'Anti-Thrombotics' },
+  { genericName: 'Clopidogrel', category: 'Anti-Thrombotics' },
+
+  // Nervous System (1)
+  { genericName: 'Gabapentin', category: 'Nervous System' },
+
+  // Supportive/Other Therapy (18)
+  { genericName: 'Aluminum Hydroxide + Magnesium Hydroxide', category: 'Supportive/Other Therapy' },
+  { genericName: 'Butamirate', category: 'Supportive/Other Therapy' },
+  { genericName: 'Celecoxib', category: 'Supportive/Other Therapy' },
+  { genericName: 'Cetirizine', category: 'Supportive/Other Therapy' },
+  { genericName: 'Chlorphenamine', category: 'Supportive/Other Therapy' },
+  { genericName: 'Colchicine', category: 'Supportive/Other Therapy' },
+  { genericName: 'Diphenhydramine', category: 'Supportive/Other Therapy' },
+  { genericName: 'Ferrous Salt', category: 'Supportive/Other Therapy' },
+  { genericName: 'Folic Acid + Iron Ferrous', category: 'Supportive/Other Therapy' },
+  { genericName: 'Ibuprofen', category: 'Supportive/Other Therapy' },
+  { genericName: 'Lagundi', category: 'Supportive/Other Therapy' },
+  { genericName: 'Loratadine', category: 'Supportive/Other Therapy' },
+  { genericName: 'Mefenamic Acid', category: 'Supportive/Other Therapy' },
+  { genericName: 'Naproxen', category: 'Supportive/Other Therapy' },
+  { genericName: 'Omeprazole', category: 'Supportive/Other Therapy' },
+  { genericName: 'Oral Rehydration Salts', category: 'Supportive/Other Therapy' },
+  { genericName: 'Paracetamol', category: 'Supportive/Other Therapy' },
+  { genericName: 'Zinc', category: 'Supportive/Other Therapy' },
+];
+
+const getMedicineCategory = (genericName: string) => {
+  const match = DRUG_LIBRARY.find(d => d.genericName.toLowerCase() === genericName.toLowerCase());
+  return match ? match.category : 'Supportive/Other Therapy';
+};
+
+// Low Stock threshold updated to < 20 units as requested
+export const getCustomMedicineStatus = (qty: number) => {
+  if (qty === 0) return 'Out of Stock';
+  if (qty < 20) return 'Low';
+  return 'Adequate';
+};
+
 export default function MedicineTable({ onRestock }: MedicineTableProps) {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [search, setSearch] = useState('');
@@ -21,12 +127,15 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
   const [restockQty, setRestockQty] = useState<Record<string, number>>({});
   const [restockingId, setRestockingId] = useState<string | null>(null);
 
-
-  useEffect(() => {
+  const fetchMedicines = () => {
     fetch('/api/medicines')
       .then(res => res.json())
       .then(data => setMedicines(data.medicines || []))
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchMedicines();
   }, []);
 
   const filtered = medicines.filter((m) => {
@@ -36,7 +145,7 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
       m.genericName.toLowerCase().includes(q) ||
       (m.salt && m.salt.toLowerCase().includes(q)) ||
       (m.package && m.package.toLowerCase().includes(q));
-    const status = getMedicineStatus(m.quantity);
+    const status = getCustomMedicineStatus(m.quantity);
     const matchesStatus = filterStatus === 'All' || status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -64,7 +173,7 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
       setMedicines(prev => prev.map(m => m.id === med.id ? medicine : m));
       
       onRestock?.(med.id, qty);
-      toast.success(`Restocked ${med.genericName} by ${qty} ${med.unit || ''}(s). New stock: ${medicine.quantity}.`);
+      toast.success(`Restocked ${med.genericName} by ${qty}. New stock: ${medicine.quantity}.`);
       setRestockQty((prev) => ({ ...prev, [med.id]: 0 }));
     } catch (err) {
       toast.error('Restock error');
@@ -74,7 +183,7 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
   };
 
   const StatusBadge = ({ stock }: { stock: number }) => {
-    const status = getMedicineStatus(stock);
+    const status = getCustomMedicineStatus(stock);
     if (status === 'Out of Stock')
       return (
         <span className="badge badge-red">
@@ -84,12 +193,12 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
     if (status === 'Low')
       return (
         <span className="badge badge-yellow">
-          <AlertTriangle className="w-3 h-3" /> Low
+          <AlertTriangle className="w-3 h-3" /> Low Stock
         </span>
       );
     return (
       <span className="badge badge-green">
-        <CheckCircle className="w-3 h-3" /> Adequate
+        <CheckCircle className="w-3 h-3" /> Sufficient
       </span>
     );
   };
@@ -115,7 +224,7 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
           className="form-input text-sm min-w-[140px]"
         >
           {['All', 'Adequate', 'Low', 'Out of Stock'].map((s) => (
-            <option key={s}>{s}</option>
+            <option key={s} value={s === 'Adequate' ? 'Adequate' : s}>{s === 'Low' ? 'Low' : s}</option>
           ))}
         </select>
       </div>
@@ -123,9 +232,9 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {[
-          { label: 'Adequate', count: medicines.filter((m) => getMedicineStatus(m.quantity) === 'Adequate').length, cls: 'text-emerald-600' },
-          { label: 'Low Stock', count: medicines.filter((m) => getMedicineStatus(m.quantity) === 'Low').length, cls: 'text-amber-500' },
-          { label: 'Out of Stock', count: medicines.filter((m) => getMedicineStatus(m.quantity) === 'Out of Stock').length, cls: 'text-red-500' },
+          { label: 'Sufficient Supply', count: medicines.filter((m) => getCustomMedicineStatus(m.quantity) === 'Adequate').length, cls: 'text-emerald-600' },
+          { label: 'Low Stock (<20)', count: medicines.filter((m) => getCustomMedicineStatus(m.quantity) === 'Low').length, cls: 'text-amber-500' },
+          { label: 'Out of Stock', count: medicines.filter((m) => getCustomMedicineStatus(m.quantity) === 'Out of Stock').length, cls: 'text-red-500' },
         ].map((s) => (
           <div key={s.label} className="card-stat text-center">
             <p className={`text-2xl font-bold ${s.cls}`}>{s.count}</p>
@@ -142,19 +251,18 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
           <p className="text-sm text-gray-300">Try adjusting your search or filters</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm bg-white">
           <div className="overflow-x-auto">
-            <table className="data-table">
+            <table className="data-table text-xs">
               <thead>
-                <tr>
-                  <th>Salt</th>
-                  <th>Generic Name</th>
-                  <th>Form / Strength</th>
-                  <th>Package</th>
-                  <th className="text-right">Unit Price</th>
-                  <th className="text-center">Stock</th>
-                  <th className="text-center">Status</th>
-                  <th className="text-center">Restock</th>
+                <tr className="bg-gray-150">
+                  <th className="px-3 py-2">Category</th>
+                  <th className="px-3 py-2">Medicine Details</th>
+                  <th className="px-3 py-2 text-right">Unit Price</th>
+                  <th className="px-3 py-2 text-center">Unit</th>
+                  <th className="px-3 py-2 text-center font-bold">Stock Level</th>
+                  <th className="px-3 py-2 text-center">Status</th>
+                  <th className="px-3 py-2 text-center">Restock Admin</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,59 +270,51 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
                   const isLive = medicines.find((m) => m.id === med.id);
                   const liveStock = isLive?.quantity ?? med.quantity;
                   const isRestocking = restockingId === med.id;
+                  const category = getMedicineCategory(med.genericName);
                   return (
-                    <tr key={med.id} className={liveStock === 0 ? 'bg-red-50/30' : liveStock <= 10 ? 'bg-amber-50/20' : ''}>
-                      <td>
-                        <span className="text-sm text-gray-700">{med.salt || 'N/A'}</span>
+                    <tr key={med.id} className={liveStock === 0 ? 'bg-red-50/20' : liveStock < 20 ? 'bg-amber-50/15' : ''}>
+                      <td className="px-3 py-2 font-medium text-gray-500">{category}</td>
+                      <td className="px-3 py-2">
+                        <span className="font-semibold text-gray-900 block">{med.genericName}</span>
+                        <span className="text-[10px] text-gray-400">{med.salt || ''} · {med.dosageForm || ''} {med.strength || ''} · {med.package || ''}</span>
                       </td>
-                      <td className="font-semibold text-gray-900">{med.genericName}</td>
-                      <td>
-                        <span className="text-sm text-gray-700">{med.dosageForm}</span>
-                        <span className="text-xs text-gray-400 ml-1">· {med.strength}</span>
-                      </td>
-                      <td>
-                        <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
-                          {med.package || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="text-right font-medium text-gray-700">{formatCurrency(med.actualUnitPrice)}</td>
-                      <td className="text-center">
-                        <span className={`text-base font-bold ${liveStock === 0 ? 'text-red-500' : liveStock <= 10 ? 'text-amber-500' : 'text-gray-900'}`}>
+                      <td className="px-3 py-2 text-right font-mono text-gray-700 font-medium">{formatCurrency(med.actualUnitPrice)}</td>
+                      <td className="px-3 py-2 text-center text-gray-500 font-medium">{med.unit || 'Unit'}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`text-sm font-bold ${liveStock === 0 ? 'text-red-600' : liveStock < 20 ? 'text-amber-500' : 'text-emerald-700'}`}>
                           {liveStock}
                         </span>
-                        <span className="text-xs text-gray-400 ml-1">{med.unit}</span>
                       </td>
-                      <td className="text-center">
+                      <td className="px-3 py-2 text-center">
                         <StatusBadge stock={liveStock} />
                       </td>
-                      <td>
-                        <div className="flex items-center gap-1.5 justify-center">
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1 justify-center">
                           <button
                             onClick={() => setRestockQty((prev) => ({ ...prev, [med.id]: Math.max(0, (prev[med.id] ?? 0) - 10) }))}
-                            className="w-6 h-6 rounded-md bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                            className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                           >
-                            <Minus className="w-3 h-3 text-gray-600" />
+                            <Minus className="w-2.5 h-2.5 text-gray-600" />
                           </button>
                           <input
                             type="number"
                             min={0}
                             value={restockQty[med.id] ?? 0}
                             onChange={(e) => setRestockQty((prev) => ({ ...prev, [med.id]: parseInt(e.target.value) || 0 }))}
-                            className="form-input w-16 text-center text-sm px-1 py-1"
+                            className="form-input w-12 text-center text-xs px-1 py-0.5"
                           />
                           <button
                             onClick={() => setRestockQty((prev) => ({ ...prev, [med.id]: (prev[med.id] ?? 0) + 10 }))}
-                            className="w-6 h-6 rounded-md bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                            className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                           >
-                            <Plus className="w-3 h-3 text-gray-600" />
+                            <Plus className="w-2.5 h-2.5 text-gray-600" />
                           </button>
                           <button
-                            id={`restock-${med.id}`}
                             onClick={() => handleRestock(med)}
                             disabled={!restockQty[med.id] || restockQty[med.id] <= 0 || isRestocking}
-                            className="btn-primary text-xs px-3 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed ml-1"
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold disabled:opacity-40 disabled:cursor-not-allowed ml-1 transition-all"
                           >
-                            {isRestocking ? 'Saving...' : 'Add'}
+                            {isRestocking ? '...' : 'Add'}
                           </button>
                         </div>
                       </td>
@@ -224,30 +324,31 @@ export default function MedicineTable({ onRestock }: MedicineTableProps) {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-gray-400">
-            Showing {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} medicines
-          </p>
-          <div className="flex gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                  p === page
-                    ? 'bg-philgreen text-white'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100 bg-gray-50/50">
+              <span className="text-xs text-gray-500">
+                Showing Page <strong className="font-bold text-gray-700">{page}</strong> of {totalPages}
+              </span>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-2.5 py-1 text-[11px] font-bold bg-white border rounded hover:bg-gray-50 disabled:opacity-40"
+                >
+                  Prev
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-2.5 py-1 text-[11px] font-bold bg-white border rounded hover:bg-gray-50 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

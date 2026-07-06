@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import type { Member, SOAPNote } from '@/lib/types';
-import { ClipboardList, User, Search, CheckCircle, Clock, ChevronDown } from 'lucide-react';
+import { ClipboardList, User, Search, CheckCircle, Clock, ChevronDown, UploadCloud, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
 
@@ -154,6 +154,8 @@ function ConsultationContent() {
   const [managementOther, setManagementOther] = useState('');
   const [managementNotApplicable, setManagementNotApplicable] = useState(false);
   const [isActiveConsult, setIsActiveConsult] = useState(false);
+  const [isDispatching, setIsDispatching] = useState(false);
+  const [dispatchedNoteId, setDispatchedNoteId] = useState<string | null>(null);
   const [visitDate, setVisitDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [activeSoapTab, setActiveSoapTab] = useState<'S' | 'O' | 'A' | 'P'>('S');
   const [satisfactionScore, setSatisfactionScore] = useState<string>('');
@@ -286,6 +288,21 @@ function ConsultationContent() {
     ? soapNotes.filter(n => n.memberPin === selectedMember.philhealthPin).sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime())
     : [];
 
+  const getTransactionNumber = (note: any, memberPin: string, notes: any[]) => {
+    const pinClean = memberPin.replace(/-/g, '');
+    const chronologicalNotes = [...notes].sort((a, b) => new Date(a.visitDate).getTime() - new Date(b.visitDate).getTime());
+    const index = chronologicalNotes.findIndex(n => n.id === note.id);
+    const sequentialNum = index !== -1 ? index + 1 : chronologicalNotes.length + 1;
+    return `TXN-CONS-${pinClean}-${String(sequentialNum).padStart(2, '0')}`;
+  };
+
+  const getConsultationNumber = (note: any, notes: any[]) => {
+    const chronologicalNotes = [...notes].sort((a, b) => new Date(a.visitDate).getTime() - new Date(b.visitDate).getTime());
+    const index = chronologicalNotes.findIndex(n => n.id === note.id);
+    const sequentialNum = index !== -1 ? index + 1 : chronologicalNotes.length + 1;
+    return `CONS-${sequentialNum}`;
+  };
+
   // Pre-fill from URL ?pin= (from triage desk)
   useEffect(() => {
     const pin = searchParams.get('pin');
@@ -395,6 +412,32 @@ function ConsultationContent() {
       toast.success('Consultation saved as draft.');
     } catch (err) {
       toast.error('Failed to save consultation draft.');
+    }
+  };
+
+  const handleDispatchConsultation = async (noteId: string) => {
+    setIsDispatching(true);
+    try {
+      const note = soapNotes.find(n => n.id === noteId) || patientNotes.find(n => n.id === noteId);
+      if (!note) throw new Error('Note not found');
+      await fetch('/api/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceType: 'Consultation',
+          sourceId: noteId,
+          patientName: note.memberName || `${selectedMember?.firstName} ${selectedMember?.lastName}`,
+          patientPin: note.memberPin || selectedMember?.philhealthPin || '',
+          description: `SOAP Note — ${note.icd10Code}: ${note.assessment || 'Consultation'}`,
+          actor: note.physicianName || 'System',
+        }),
+      });
+      setDispatchedNoteId(noteId);
+      toast.success('Consultation dispatched to PhilHealth!');
+    } catch (err) {
+      toast.error('Failed to dispatch consultation.');
+    } finally {
+      setIsDispatching(false);
     }
   };
 
@@ -589,7 +632,7 @@ function ConsultationContent() {
                   <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-3 text-xs bg-gray-50/50 p-4 rounded-xl border border-gray-100">
                     <div>
                       <span className="text-gray-400 block mb-0.5 font-medium">No.</span>
-                      <span className="font-bold text-gray-900">{selectedMember.id.replace('member-', '')}</span>
+                      <span className="font-bold text-gray-900">{allMembers.findIndex(m => m.id === selectedMember.id) + 1}</span>
                     </div>
                     <div>
                       <span className="text-gray-400 block mb-0.5 font-medium">Case No.</span>
@@ -664,7 +707,7 @@ function ConsultationContent() {
                   <div className="max-w-md mx-auto text-left border border-gray-200 rounded-xl bg-white p-4 shadow-sm text-xs space-y-3">
                     <div className="bg-gray-50 -mx-4 -mt-4 px-4 py-2 border-b border-gray-200 rounded-t-xl flex justify-between items-center">
                       <span className="font-bold text-gray-700 uppercase tracking-wider text-[10px]">Patient Information Details</span>
-                      <span className="font-mono font-bold text-purple-700">TXN-CONS-{selectedMember.philhealthPin.replace(/-/g, '')}</span>
+                      <span className="font-mono font-bold text-purple-700">{getTransactionNumber({ id: 'new', visitDate: new Date().toISOString() }, selectedMember.philhealthPin, patientNotes)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       <div>
@@ -743,9 +786,18 @@ function ConsultationContent() {
                     <ClipboardList className="w-5 h-5 text-purple-600" />
                     <h2 className="font-semibold text-gray-800">Consultation Session Details</h2>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1">Effectivity Year</label>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">Transaction No.</label>
+                      <input
+                        type="text"
+                        value={getTransactionNumber({ id: editingDraftId || 'new', visitDate: visitDate || new Date().toISOString() }, selectedMember.philhealthPin, patientNotes)}
+                        readOnly
+                        className="form-input text-sm bg-purple-50 text-purple-750 font-bold font-mono cursor-not-allowed border-purple-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-550 block mb-1">Effectivity Year</label>
                       <input
                         type="number"
                         value={new Date().getFullYear()}
@@ -1604,11 +1656,11 @@ function ConsultationContent() {
                           <div className="grid grid-cols-1 gap-y-1">
                             <div>
                               <span className="text-gray-400 font-medium">Consultation No: </span>
-                              <span className="font-semibold text-gray-800 font-mono">CONS-{note.id.slice(-8).toUpperCase()}</span>
+                              <span className="font-semibold text-gray-800 font-mono">{getConsultationNumber(note, patientNotes)}</span>
                             </div>
                             <div>
                               <span className="text-gray-400 font-medium">Transaction No: </span>
-                              <span className="font-semibold text-purple-700 font-mono">TXN-CONS-{note.memberPin.replace(/-/g, '')}</span>
+                              <span className="font-semibold text-purple-700 font-mono">{getTransactionNumber(note, note.memberPin, patientNotes)}</span>
                             </div>
                             <div>
                               <span className="text-gray-400 font-medium">Patient PIN: </span>
@@ -1626,6 +1678,25 @@ function ConsultationContent() {
                               <span className="text-gray-400 font-medium">Consultation by: </span>
                               <span className="font-semibold text-gray-850">{note.physicianName}</span>
                             </div>
+                          </div>
+                          <div className="mt-3 pt-2 border-t border-gray-100">
+                            <button
+                              onClick={() => handleDispatchConsultation(note.id)}
+                              disabled={isDispatching || dispatchedNoteId === note.id}
+                              className={`text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all w-full justify-center ${
+                                dispatchedNoteId === note.id
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                              }`}
+                            >
+                              {isDispatching ? (
+                                <><Loader2 className="w-3 h-3 animate-spin" /> Dispatching...</>
+                              ) : dispatchedNoteId === note.id ? (
+                                <><CheckCircle className="w-3 h-3" /> Dispatched</>
+                              ) : (
+                                <><UploadCloud className="w-3 h-3" /> Direct PHIC Dispatch</>
+                              )}
+                            </button>
                           </div>
                         </div>
                       );

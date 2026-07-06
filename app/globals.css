@@ -47,16 +47,16 @@
 @layer components {
   /* Sidebar */
   .sidebar {
-    @apply w-64 min-h-screen flex flex-col;
+    @apply w-64 h-screen sticky top-0 flex flex-col overflow-y-auto select-none;
     background: linear-gradient(180deg, #0A1628 0%, #1a2a40 100%);
   }
 
   .sidebar-logo {
-    @apply flex items-center gap-3 px-6 py-5 border-b border-white/10;
+    @apply flex items-center gap-3 px-4 py-3 border-b border-white/10;
   }
 
   .sidebar-nav-link {
-    @apply flex items-center gap-3 px-4 py-3 mx-3 rounded-lg text-sm font-medium text-white/70 transition-all duration-200 cursor-pointer;
+    @apply flex items-center gap-2 px-3 py-1.5 mx-2.5 rounded-lg text-xs font-semibold text-white/70 transition-all duration-200 cursor-pointer;
   }
 
   .sidebar-nav-link:hover {

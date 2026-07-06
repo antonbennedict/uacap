@@ -1,26 +1,40 @@
 'use client';
 
-import { useAppStore } from '@/lib/store';
-import MedicineTable from '@/components/MedicineTable';
+import { useState, useEffect } from 'react';
+import MedicineTable, { getCustomMedicineStatus } from '@/components/MedicineTable';
 import AuditLog from '@/components/AuditLog';
 import { Package, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
-import { getMedicineStatus } from '@/lib/types';
 
 export default function GamotPage() {
-  // Removed useAppStore destructing for legacy properties
-  const medicines: any[] = [];
-  const lastUpdated = new Date().toISOString();
+  const [medicines, setMedicines] = useState<any[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  const outOfStock = medicines.filter((m) => getMedicineStatus(m.quantity) === 'Out of Stock').length;
-  const lowStock = medicines.filter((m) => getMedicineStatus(m.quantity) === 'Low').length;
-  const adequate = medicines.filter((m) => getMedicineStatus(m.quantity) === 'Adequate').length;
+  const fetchMedicines = () => {
+    fetch('/api/medicines')
+      .then(res => res.json())
+      .then(data => {
+        if (data.medicines) {
+          setMedicines(data.medicines);
+          setLastUpdated(new Date().toISOString());
+        }
+      })
+      .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchMedicines();
+  }, []);
+
+  const outOfStock = medicines.filter((m) => getCustomMedicineStatus(m.quantity) === 'Out of Stock').length;
+  const lowStock = medicines.filter((m) => getCustomMedicineStatus(m.quantity) === 'Low').length;
+  const adequate = medicines.filter((m) => getCustomMedicineStatus(m.quantity) === 'Adequate').length;
   const totalItems = medicines.reduce((sum, m) => sum + m.quantity, 0);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Page header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md bg-blue-700">
             <Package className="w-5 h-5 text-white" />
@@ -40,13 +54,15 @@ export default function GamotPage() {
               {lastUpdated ? formatDateTime(lastUpdated) : 'No recent changes'}
             </span>
           </span>
-          <RefreshCw className="w-3.5 h-3.5 ml-1 text-gray-300" />
+          <button onClick={fetchMedicines} className="hover:text-blue-600 transition-colors">
+            <RefreshCw className="w-3.5 h-3.5 ml-1 text-gray-400" />
+          </button>
         </div>
       </div>
 
       {/* Alerts for critical stock */}
       {(outOfStock > 0 || lowStock > 0) && (
-        <div className="mb-5 space-y-2">
+        <div className="space-y-2">
           {outOfStock > 0 && (
             <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl animate-fade-in">
               <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
@@ -69,7 +85,7 @@ export default function GamotPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-amber-800">
-                  {lowStock} medicine{lowStock !== 1 ? 's' : ''} running low (≤10 units)
+                  {lowStock} medicine{lowStock !== 1 ? 's' : ''} running low (below 20 units)
                 </p>
                 <p className="text-xs text-amber-600">
                   Please restock these medicines soon to ensure continuous patient care.
@@ -81,21 +97,21 @@ export default function GamotPage() {
       )}
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="card-stat">
           <p className="text-xs text-gray-400 uppercase tracking-wider">Total SKUs</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{medicines.length}</p>
           <p className="text-xs text-gray-400 mt-0.5">Formulary items</p>
         </div>
         <div className="card-stat">
-          <p className="text-xs text-gray-400 uppercase tracking-wider">Adequate</p>
+          <p className="text-xs text-gray-400 uppercase tracking-wider">Sufficient Supply</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">{adequate}</p>
-          <p className="text-xs text-gray-400 mt-0.5">&gt;10 units</p>
+          <p className="text-xs text-gray-400 mt-0.5">&ge;20 units</p>
         </div>
         <div className="card-stat">
           <p className="text-xs text-gray-400 uppercase tracking-wider">Low Stock</p>
           <p className="text-2xl font-bold text-amber-500 mt-1">{lowStock}</p>
-          <p className="text-xs text-gray-400 mt-0.5">1–10 units</p>
+          <p className="text-xs text-gray-400 mt-0.5">1&ndash;19 units</p>
         </div>
         <div className="card-stat">
           <p className="text-xs text-gray-400 uppercase tracking-wider">Total Units</p>
@@ -105,8 +121,8 @@ export default function GamotPage() {
       </div>
 
       {/* Medicine table */}
-      <div className="card-glass p-5 mb-6">
-        <MedicineTable />
+      <div className="card-glass p-5">
+        <MedicineTable onRestock={fetchMedicines} />
       </div>
 
       {/* Audit log (collapsible) */}
