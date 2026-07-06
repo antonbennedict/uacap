@@ -16,6 +16,14 @@ export default function FPEPage() {
   const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
   const [isDispatching, setIsDispatching] = useState(false);
 
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-PH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
   // Form State
   const [vitalSigns, setVitalSigns] = useState({
     heightCm: '',
@@ -137,25 +145,28 @@ export default function FPEPage() {
         </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Patient Selection */}
-        <div className="card-glass p-5">
-          <h2 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
-            <User className="w-4 h-4 text-gray-400" />
-            Patient Selection
-          </h2>
+      {!selectedMember ? (
+        /* Centered Patient Selection first state */
+        <div className="max-w-xl mx-auto mt-12 card-glass p-6 shadow-xl space-y-4">
+          <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-2">
+            <User className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-700">Patient Selection</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Please search and select a patient to start or view FPE records.</p>
+          </div>
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               value={memberSearch}
               onChange={(e) => { setMemberSearch(e.target.value); setMemberDropdownOpen(true); }}
               onFocus={() => setMemberDropdownOpen(true)}
-              placeholder="Search patient by name or PIN..."
-              className="form-input pl-10"
+              placeholder="Search existing member by name or PIN..."
+              className="form-input pl-9"
             />
             {memberDropdownOpen && (
-              <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
+              <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
                 {filteredMembers.length === 0 ? (
                   <p className="px-4 py-3 text-sm text-gray-400">No members found.</p>
                 ) : (
@@ -167,16 +178,14 @@ export default function FPEPage() {
                         setMemberSearch(`${m.firstName} ${m.lastName}`);
                         setMemberDropdownOpen(false);
                       }}
-                      className="w-full flex items-center justify-between px-4 py-3 hover:bg-emerald-50 text-left border-b border-gray-50 transition-colors"
+                      className="w-full flex justify-between px-4 py-3 hover:bg-emerald-50 text-left border-b border-gray-50 transition-colors text-sm items-center"
                     >
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {m.firstName} {m.middleName} {m.lastName}
-                        </p>
-                        <p className="text-xs font-mono text-gray-400">{m.philhealthPin}</p>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900">{m.firstName} {m.lastName}</span>
+                        <span className="font-mono text-gray-400 text-xs">{m.philhealthPin}</span>
                       </div>
                       {fpeRecords.some(r => r.memberPin === m.philhealthPin) && (
-                        <span className="badge badge-green text-xs">FPE on file</span>
+                        <span className="badge badge-green text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-semibold">FPE on file</span>
                       )}
                     </button>
                   ))
@@ -185,111 +194,208 @@ export default function FPEPage() {
             )}
           </div>
         </div>
-
-        {selectedMember && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
-            {/* Form Fields */}
-            <div className="md:col-span-2 space-y-6">
-              <div className="card-glass p-5">
-                <h2 className="text-base font-semibold text-gray-800 mb-4">Vital Signs & Anthropometrics</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Height (cm) *</label>
-                    <input
-                      type="number"
-                      value={vitalSigns.heightCm}
-                      onChange={(e) => setVitalSigns(prev => ({ ...prev, heightCm: e.target.value }))}
-                      disabled={isDispatched}
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Weight (kg) *</label>
-                    <input
-                      type="number"
-                      value={vitalSigns.weightKg}
-                      onChange={(e) => setVitalSigns(prev => ({ ...prev, weightKg: e.target.value }))}
-                      disabled={isDispatched}
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Blood Pressure (Systolic) *</label>
-                    <input
-                      type="number"
-                      value={vitalSigns.bloodPressureSystolic}
-                      onChange={(e) => setVitalSigns(prev => ({ ...prev, bloodPressureSystolic: e.target.value }))}
-                      disabled={isDispatched}
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Blood Pressure (Diastolic) *</label>
-                    <input
-                      type="number"
-                      value={vitalSigns.bloodPressureDiastolic}
-                      onChange={(e) => setVitalSigns(prev => ({ ...prev, bloodPressureDiastolic: e.target.value }))}
-                      disabled={isDispatched}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Fasting Blood Sugar (mg/dL) - Optional</label>
-                    <input
-                      type="number"
-                      value={vitalSigns.fastingBloodSugar}
-                      onChange={(e) => setVitalSigns(prev => ({ ...prev, fastingBloodSugar: e.target.value }))}
-                      disabled={isDispatched}
-                      className="form-input"
-                    />
-                  </div>
-                </div>
+      ) : (
+        /* Workspace when selected */
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
+          {/* Form Fields */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Patient Selector */}
+            <div className="card-glass p-5">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><User className="w-4 h-4 text-gray-400" /> Patient Selection</h2>
+                <button 
+                  onClick={() => { setSelectedMember(null); setMemberSearch(''); }} 
+                  className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold"
+                >
+                  Change Patient
+                </button>
               </div>
-
-              <div className="card-glass p-5">
-                <h2 className="text-base font-semibold text-gray-800 mb-4">Lifestyle & History</h2>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Smoking Status</label>
-                    <select
-                      value={lifestyle.smokingStatus}
-                      onChange={(e) => setLifestyle(prev => ({ ...prev, smokingStatus: e.target.value as any }))}
-                      disabled={isDispatched}
-                      className="form-input"
-                    >
-                      <option>Never</option>
-                      <option>Former</option>
-                      <option>Current</option>
-                    </select>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={memberSearch}
+                  onChange={(e) => { setMemberSearch(e.target.value); setMemberDropdownOpen(true); }}
+                  onFocus={() => setMemberDropdownOpen(true)}
+                  placeholder="Search existing member by name or PIN..."
+                  className="form-input pl-9"
+                />
+                {memberDropdownOpen && (
+                  <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
+                    {filteredMembers.length === 0 ? (
+                      <p className="px-4 py-3 text-sm text-gray-400">No members found.</p>
+                    ) : (
+                      filteredMembers.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => {
+                            setSelectedMember(m);
+                            setMemberSearch(`${m.firstName} ${m.lastName}`);
+                            setMemberDropdownOpen(false);
+                          }}
+                          className="w-full flex justify-between px-4 py-3 hover:bg-emerald-50 text-left border-b border-gray-50 transition-colors text-sm items-center"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900">{m.firstName} {m.lastName}</span>
+                            <span className="font-mono text-gray-400 text-xs">{m.philhealthPin}</span>
+                          </div>
+                          {fpeRecords.some(r => r.memberPin === m.philhealthPin) && (
+                            <span className="badge badge-green text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-semibold">FPE on file</span>
+                          )}
+                        </button>
+                      ))
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Alcohol Consumption</label>
-                    <select
-                      value={lifestyle.alcoholConsumption}
-                      onChange={(e) => setLifestyle(prev => ({ ...prev, alcoholConsumption: e.target.value as any }))}
-                      disabled={isDispatched}
-                      className="form-input"
-                    >
-                      <option>Never</option>
-                      <option>Occasional</option>
-                      <option>Regular</option>
-                    </select>
-                  </div>
+                )}
+              </div>
+              
+              {/* Selected Patient Details Row */}
+              <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-3 text-xs bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                <div>
+                  <span className="text-gray-400 block mb-0.5 font-medium">No.</span>
+                  <span className="font-bold text-gray-900">{selectedMember.id.replace('member-', '')}</span>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Medical History</label>
-                  <textarea
-                    value={medicalHistory}
-                    onChange={(e) => setMedicalHistory(e.target.value)}
+                  <span className="text-gray-400 block mb-0.5 font-medium">Case No.</span>
+                  <span className="font-bold text-emerald-700 font-mono">2026-{selectedMember.philhealthPin.replace(/-/g, '').slice(-6)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block mb-0.5 font-medium">PIN</span>
+                  <span className="font-semibold text-gray-900 font-mono">{selectedMember.philhealthPin}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block mb-0.5 font-medium">Last Name</span>
+                  <span className="font-semibold text-gray-900 uppercase">{selectedMember.lastName}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block mb-0.5 font-medium">First Name</span>
+                  <span className="font-semibold text-gray-900 uppercase">{selectedMember.firstName}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block mb-0.5 font-medium">Middle Name</span>
+                  <span className="font-semibold text-gray-900 uppercase">{selectedMember.middleName || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block mb-0.5 font-medium">Extension</span>
+                  <span className="text-sm font-semibold text-gray-900 uppercase">{selectedMember.extension || 'None'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block mb-0.5 font-medium">Date of Birth</span>
+                  <span className="font-semibold text-gray-900">{formatDate(selectedMember.dateOfBirth)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block mb-0.5 font-medium">Client Type</span>
+                  <span className="font-semibold text-gray-900">{selectedMember.clientType}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block mb-0.5 font-medium">Effective Year</span>
+                  <span className="font-semibold text-gray-900 font-mono">{new Date().getFullYear()}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="card-glass p-5">
+              <h2 className="text-base font-semibold text-gray-800 mb-4">Vital Signs & Anthropometrics</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Height (cm) *</label>
+                  <input
+                    type="number"
+                    value={vitalSigns.heightCm}
+                    onChange={(e) => setVitalSigns(prev => ({ ...prev, heightCm: e.target.value }))}
                     disabled={isDispatched}
-                    rows={4}
-                    placeholder="Document significant medical history..."
-                    className="form-input resize-none"
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Weight (kg) *</label>
+                  <input
+                    type="number"
+                    value={vitalSigns.weightKg}
+                    onChange={(e) => setVitalSigns(prev => ({ ...prev, weightKg: e.target.value }))}
+                    disabled={isDispatched}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Blood Pressure (Systolic) *</label>
+                  <input
+                    type="number"
+                    value={vitalSigns.bloodPressureSystolic}
+                    onChange={(e) => setVitalSigns(prev => ({ ...prev, bloodPressureSystolic: e.target.value }))}
+                    disabled={isDispatched}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Blood Pressure (Diastolic) *</label>
+                  <input
+                    type="number"
+                    value={vitalSigns.bloodPressureDiastolic}
+                    onChange={(e) => setVitalSigns(prev => ({ ...prev, bloodPressureDiastolic: e.target.value }))}
+                    disabled={isDispatched}
+                    className="form-input"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Fasting Blood Sugar (mg/dL) - Optional</label>
+                  <input
+                    type="number"
+                    value={vitalSigns.fastingBloodSugar}
+                    onChange={(e) => setVitalSigns(prev => ({ ...prev, fastingBloodSugar: e.target.value }))}
+                    disabled={isDispatched}
+                    className="form-input"
                   />
                 </div>
               </div>
             </div>
 
+            <div className="card-glass p-5">
+              <h2 className="text-base font-semibold text-gray-800 mb-4">Lifestyle & History</h2>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Smoking Status</label>
+                  <select
+                    value={lifestyle.smokingStatus}
+                    onChange={(e) => setLifestyle(prev => ({ ...prev, smokingStatus: e.target.value as any }))}
+                    disabled={isDispatched}
+                    className="form-input"
+                  >
+                    <option>Never</option>
+                    <option>Former</option>
+                    <option>Current</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Alcohol Consumption</label>
+                  <select
+                    value={lifestyle.alcoholConsumption}
+                    onChange={(e) => setLifestyle(prev => ({ ...prev, alcoholConsumption: e.target.value as any }))}
+                    disabled={isDispatched}
+                    className="form-input"
+                  >
+                    <option>Never</option>
+                    <option>Occasional</option>
+                    <option>Regular</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Medical History</label>
+                <textarea
+                  value={medicalHistory}
+                  onChange={(e) => setMedicalHistory(e.target.value)}
+                  disabled={isDispatched}
+                  rows={4}
+                  placeholder="Document significant medical history..."
+                  className="form-input resize-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel / Compliance & Actions */}
+          <div className="space-y-6">
             {/* Circular 2024-0013 Compliance */}
             <div className="card-glass p-6 space-y-5">
               <h2 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2">PhilHealth Compliance (Circular 2024-0013)</h2>
@@ -363,8 +469,8 @@ export default function FPEPage() {
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

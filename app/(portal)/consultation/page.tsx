@@ -79,6 +79,9 @@ function ConsultationContent() {
   const { saveSOAPNote } = useAppStore();
   const [soapNotes, setSoapNotes] = useState<any[]>([]);
   const finalizeSOAPNote = async (id: string) => { setSoapNotes(prev => prev.map(n => n.id === id ? { ...n, status: 'Finalized' } : n)); };
+  
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [isCaseClicked, setIsCaseClicked] = useState(false);
 
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
@@ -156,8 +159,58 @@ function ConsultationContent() {
   const [satisfactionScore, setSatisfactionScore] = useState<string>('');
   const [isYearEndCompliant, setIsYearEndCompliant] = useState(false);
 
+  const handleEditDraft = (note: any) => {
+    setEditingDraftId(note.id);
+    setIsActiveConsult(true);
+    
+    // Set subjective fields
+    setChiefComplaints(note.rawChiefComplaints || []);
+    setOtherComplaint(note.rawOtherComplaint || '');
+    setHistoryOfIllness(note.rawHistoryOfIllness || '');
+    
+    // Set objective fields
+    const obj = note.objective || {};
+    setObjective({
+      bloodPressure: obj.bloodPressure || '',
+      heartRate: obj.heartRate ? String(obj.heartRate) : '',
+      temperature: obj.temperature ? String(obj.temperature) : '',
+      respiratoryRate: obj.respiratoryRate ? String(obj.respiratoryRate) : '',
+      oxygenSat: obj.oxygenSat ? String(obj.oxygenSat) : '',
+      weight: obj.weight ? String(obj.weight) : '',
+      height: obj.height ? String(obj.height) : '',
+    });
+    setWeightVal(obj.weight ? String(obj.weight) : '');
+    setHeightVal(obj.height ? String(obj.height) : '');
+    
+    // Set assessment fields
+    setSelectedDiagnoses(note.rawSelectedDiagnoses || []);
+    
+    // Set plan/management fields
+    setLabExams(note.rawLabExams || {});
+    setOtherExamVal(note.rawOtherExamVal || '');
+    setManagementChecked(note.rawManagementChecked || []);
+    setManagementOther(note.rawManagementOther || '');
+    setManagementNotApplicable(note.rawManagementNotApplicable || false);
+    
+    // Additional fields
+    setSatisfactionScore(note.satisfactionScore || '');
+    setIsYearEndCompliant(note.isYearEndCompliant || false);
+    if (note.visitDate) {
+      setVisitDate(note.visitDate.split('T')[0]);
+    }
+    
+    const pIdx = PHYSICIANS.indexOf(note.physicianName);
+    if (pIdx !== -1) {
+      setPhysicianIdx(pIdx);
+    }
+    
+    toast.info('Draft consultation loaded for editing.');
+  };
+
   useEffect(() => {
+    setEditingDraftId(null);
     setIsActiveConsult(false);
+    setIsCaseClicked(false);
     setVisitDate(new Date().toISOString().split('T')[0]);
     setActiveSoapTab('S');
     setChiefComplaints([]);
@@ -190,6 +243,27 @@ function ConsultationContent() {
     setManagementNotApplicable(false);
     setSatisfactionScore('');
     setIsYearEndCompliant(false);
+  }, [selectedMember]);
+  
+  // Fetch patient SOAP notes dynamically from database when selected member changes
+  useEffect(() => {
+    if (!selectedMember) {
+      setSoapNotes([]);
+      return;
+    }
+    const memberId = selectedMember.id;
+    async function fetchSoapNotes() {
+      try {
+        const response = await fetch(`/api/consultations/soap?memberId=${memberId}`);
+        const data = await response.json();
+        if (data.soapNotes) {
+          setSoapNotes(data.soapNotes);
+        }
+      } catch (err) {
+        console.error('Failed to fetch soap notes:', err);
+      }
+    }
+    fetchSoapNotes();
   }, [selectedMember]);
 
   const calcAge = (dob: string) => {
@@ -234,7 +308,7 @@ function ConsultationContent() {
     c.description.toLowerCase().includes(icd10Search.toLowerCase())
   );
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (!selectedMember) { toast.error('Select a patient first.'); return; }
     const subjectiveText = [
       ...chiefComplaints,
@@ -271,7 +345,7 @@ function ConsultationContent() {
     ].filter(Boolean).join(' | ') || 'No plan specified.';
 
     const note: SOAPNote = {
-      id: `soap-${Date.now()}`,
+      id: editingDraftId || `soap-${Date.now()}`,
       memberPin: selectedMember.philhealthPin,
       memberName: `${selectedMember.firstName} ${selectedMember.lastName}`,
       clinicId: 'DEFAULT_CLINIC',
@@ -297,11 +371,34 @@ function ConsultationContent() {
       status: 'Draft',
       createdAt: new Date().toISOString(),
     };
-    saveSOAPNote(note);
-    toast.success('Consultation saved as draft.');
+
+    try {
+      await saveSOAPNote({
+        ...note,
+        memberId: selectedMember.id,
+        rawChiefComplaints: chiefComplaints,
+        rawOtherComplaint: otherComplaint,
+        rawHistoryOfIllness: historyOfIllness,
+        rawSelectedDiagnoses: selectedDiagnoses,
+        rawLabExams: labExams,
+        rawOtherExamVal: otherExamVal,
+        rawManagementChecked: managementChecked,
+        rawManagementOther: managementOther,
+        rawManagementNotApplicable: managementNotApplicable,
+      });
+      // Refetch soap notes to update list
+      const response = await fetch(`/api/consultations/soap?memberId=${selectedMember.id}`);
+      const data = await response.json();
+      if (data.soapNotes) {
+        setSoapNotes(data.soapNotes);
+      }
+      toast.success('Consultation saved as draft.');
+    } catch (err) {
+      toast.error('Failed to save consultation draft.');
+    }
   };
 
-  const handleFinalize = () => {
+  const handleFinalize = async () => {
     if (!selectedMember) { toast.error('Select a patient first.'); return; }
     
     const labItems: string[] = [];
@@ -347,7 +444,7 @@ function ConsultationContent() {
     const matchedIcd = (ICD10_CODES.find(c => c.description === selectedDiagnoses[0]) || { code: 'Z00.0', description: selectedDiagnoses[0] });
 
     const note: SOAPNote = {
-      id: `soap-${Date.now()}`,
+      id: editingDraftId || `soap-${Date.now()}`,
       memberPin: selectedMember.philhealthPin,
       memberName: `${selectedMember.firstName} ${selectedMember.lastName}`,
       clinicId: 'DEFAULT_CLINIC',
@@ -373,15 +470,42 @@ function ConsultationContent() {
       status: 'Finalized',
       createdAt: new Date().toISOString(),
     };
-    saveSOAPNote(note);
-    finalizeSOAPNote(note.id);
-    // Reset form
-    setChiefComplaints([]); setOtherComplaint(''); setHistoryOfIllness('');
-    setAssessment(''); setSelectedDiagnoses([]); setPlan(''); setSelectedIcd(null);
-    setLabExams({}); setOtherExamVal(''); setManagementChecked([]); setManagementOther('');
-    setObjective({ bloodPressure: '', heartRate: '', temperature: '', respiratoryRate: '', oxygenSat: '', weight: '', height: '' });
-    setVisualAcuityLeft(''); setVisualAcuityRight(''); setHeightVal(''); setHeightUnit('cm'); setWeightVal(''); setWeightUnit('kg'); setBmiVal(''); setOtherPhysicalFindings('');
-    toast.success('Consultation finalized and added to patient chart!');
+
+    try {
+      await saveSOAPNote({
+        ...note,
+        memberId: selectedMember.id,
+        rawChiefComplaints: chiefComplaints,
+        rawOtherComplaint: otherComplaint,
+        rawHistoryOfIllness: historyOfIllness,
+        rawSelectedDiagnoses: selectedDiagnoses,
+        rawLabExams: labExams,
+        rawOtherExamVal: otherExamVal,
+        rawManagementChecked: managementChecked,
+        rawManagementOther: managementOther,
+        rawManagementNotApplicable: managementNotApplicable,
+      });
+      // Refetch soap notes to update list
+      const response = await fetch(`/api/consultations/soap?memberId=${selectedMember.id}`);
+      const data = await response.json();
+      if (data.soapNotes) {
+        setSoapNotes(data.soapNotes);
+      }
+      // Reset form and redirect to search
+      setEditingDraftId(null);
+      setChiefComplaints([]); setOtherComplaint(''); setHistoryOfIllness('');
+      setAssessment(''); setSelectedDiagnoses([]); setPlan(''); setSelectedIcd(null);
+      setLabExams({}); setOtherExamVal(''); setManagementChecked([]); setManagementOther('');
+      setObjective({ bloodPressure: '', heartRate: '', temperature: '', respiratoryRate: '', oxygenSat: '', weight: '', height: '' });
+      setVisualAcuityLeft(''); setVisualAcuityRight(''); setHeightVal(''); setHeightUnit('cm'); setWeightVal(''); setWeightUnit('kg'); setBmiVal(''); setOtherPhysicalFindings('');
+      setSelectedMember(null);
+      setMemberSearch('');
+      setIsActiveConsult(false);
+      setIsCaseClicked(false);
+      toast.success('Consultation finalized and added to patient chart!');
+    } catch (err) {
+      toast.error('Failed to finalize consultation.');
+    }
   };
 
   return (
@@ -458,53 +582,72 @@ function ConsultationContent() {
               </div>
 
               {/* Selected Patient Details Row */}
-              {(patientNotes.length > 0 || isActiveConsult) && (
-                <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-3 text-xs bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">No.</span>
-                    <span className="font-bold text-gray-900">{selectedMember.id.replace('member-', '')}</span>
+              {(() => {
+                const note2025 = patientNotes.find(note => new Date(note.visitDate).getFullYear() === 2025);
+                const effectiveYear = note2025 ? 2025 : 2026;
+                return (
+                  <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-3 text-xs bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">No.</span>
+                      <span className="font-bold text-gray-900">{selectedMember.id.replace('member-', '')}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Case No.</span>
+                      <span 
+                        onClick={() => {
+                          if (!isCaseClicked) {
+                            setIsCaseClicked(true);
+                            toast.success('Case Details loaded. You can now consult the patient or view history!');
+                          }
+                        }}
+                        className={`font-bold font-mono transition-all ${
+                          !isCaseClicked 
+                            ? 'text-purple-700 bg-purple-100 hover:bg-purple-200 cursor-pointer px-1.5 py-0.5 rounded shadow-sm hover:scale-105 inline-block animate-pulse' 
+                            : 'text-purple-900 bg-purple-50 px-1 py-0.5 rounded'
+                        }`}
+                      >
+                        {effectiveYear}-{selectedMember.philhealthPin.replace(/-/g, '').slice(-6)}
+                        {!isCaseClicked && <span className="text-[9px] block text-purple-600 font-semibold text-center mt-0.5 font-sans">(Click to proceed)</span>}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">PIN</span>
+                      <span className="font-semibold text-gray-900 font-mono">{selectedMember.philhealthPin}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Last Name</span>
+                      <span className="font-semibold text-gray-800 uppercase">{selectedMember.lastName}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">First Name</span>
+                      <span className="font-semibold text-gray-800 uppercase">{selectedMember.firstName}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Middle Name</span>
+                      <span className="font-semibold text-gray-800 uppercase">{selectedMember.middleName || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Extension</span>
+                      <span className="text-sm font-semibold text-gray-900 uppercase">{selectedMember.extension || 'None'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Date of Birth</span>
+                      <span className="font-semibold text-gray-900">{formatDate(selectedMember.dateOfBirth)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Client Type</span>
+                      <span className="font-semibold text-gray-900">{selectedMember.clientType}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-0.5 font-medium">Effective Year</span>
+                      <span className="font-semibold text-gray-900 font-mono">{effectiveYear}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">Case No.</span>
-                    <span className="font-bold text-purple-700 font-mono">2026-{selectedMember.philhealthPin.replace(/-/g, '').slice(-6)}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">PIN</span>
-                    <span className="font-semibold text-gray-900 font-mono">{selectedMember.philhealthPin}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">Last Name</span>
-                    <span className="font-semibold text-gray-900 uppercase">{selectedMember.lastName}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">First Name</span>
-                    <span className="font-semibold text-gray-900 uppercase">{selectedMember.firstName}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">Middle Name</span>
-                    <span className="font-semibold text-gray-900 uppercase">{selectedMember.middleName || 'N/A'}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">Extension</span>
-                    <span className="text-sm font-semibold text-gray-900 uppercase">{selectedMember.extension || 'None'}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">Date of Birth</span>
-                    <span className="font-semibold text-gray-900">{formatDate(selectedMember.dateOfBirth)}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">Client Type</span>
-                    <span className="font-semibold text-gray-900">{selectedMember.clientType}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5 font-medium">Effective Year</span>
-                    <span className="font-semibold text-gray-900 font-mono">{new Date().getFullYear()}</span>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
  
-            {!isActiveConsult ? (
+            {isCaseClicked && (!isActiveConsult ? (
               /* If patient hasn't clicked Consult/Add yet, show the pre-consult state */
               patientNotes.length === 0 ? (
                 /* No prior records view */
@@ -572,6 +715,28 @@ function ConsultationContent() {
             ) : (
               /* Render the regular SOAP inputs */
               <>
+                {editingDraftId && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between shadow-sm mb-4 w-full">
+                    <div>
+                      <h4 className="text-sm font-bold text-amber-900">Editing Draft Consultation</h4>
+                      <p className="text-xs text-amber-700">You are currently editing an existing draft. Finalizing or saving will update this record.</p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setEditingDraftId(null);
+                        setChiefComplaints([]); setOtherComplaint(''); setHistoryOfIllness('');
+                        setAssessment(''); setSelectedDiagnoses([]); setPlan(''); setSelectedIcd(null);
+                        setLabExams({}); setOtherExamVal(''); setManagementChecked([]); setManagementOther('');
+                        setObjective({ bloodPressure: '', heartRate: '', temperature: '', respiratoryRate: '', oxygenSat: '', weight: '', height: '' });
+                        setVisualAcuityLeft(''); setVisualAcuityRight(''); setHeightVal(''); setHeightUnit('cm'); setWeightVal(''); setWeightUnit('kg'); setBmiVal(''); setOtherPhysicalFindings('');
+                        toast.info('Draft editing cancelled. Started a new consultation form.');
+                      }}
+                      className="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Cancel Edit & Start New
+                    </button>
+                  </div>
+                )}
                 {/* Consultation Details Card */}
                 <div className="card-glass p-5">
                   <div className="flex items-center gap-2 mb-3">
@@ -1399,16 +1564,17 @@ function ConsultationContent() {
                   </>
                 )}
               </>
-            )}
+            ))}
           </div>
 
           {/* Right Panel */}
           <div className="space-y-5">
-            {/* Attending Physician & Actions */}
+            {isCaseClicked && (
+              <>
+                {/* Attending Physician & Actions */}
             {isActiveConsult && (
               <div className="card-glass p-5">
                 <div className="space-y-2">
-                  <button onClick={handleSaveDraft} className="btn-secondary w-full justify-center">Save Draft</button>
                   <button onClick={handleFinalize} disabled={!selectedMember} className="btn-primary w-full justify-center bg-purple-600 hover:bg-purple-700 disabled:opacity-50">
                     <CheckCircle className="w-4 h-4" /> Finalize Consultation
                   </button>
@@ -1417,29 +1583,81 @@ function ConsultationContent() {
             )}
 
             {/* Patient Chart History */}
-            <div className="card-glass p-5">
-              <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            {!isActiveConsult && (
+              <div className="card-glass p-5">
+                <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-gray-400" /> Patient Chart History
               </h2>
               {patientNotes.length === 0 ? (
                 <p className="text-xs text-gray-400 italic">No prior consultations for this patient.</p>
               ) : (
                 <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-thin pr-1">
-                  {patientNotes.map(note => (
-                    <div key={note.id} className="border border-gray-100 rounded-xl p-3 bg-white hover:shadow-sm transition-shadow">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-500">{new Date(note.visitDate).toLocaleDateString('en-PH')}</span>
-                        <span className={`badge text-xs ${note.status === 'Finalized' ? 'badge-green' : 'badge-yellow'}`}>{note.status}</span>
+                  {patientNotes.map(note => {
+                    const isFinalized = note.status === 'Finalized';
+                    if (isFinalized) {
+                      return (
+                        <div key={note.id} className="border border-gray-100 rounded-xl p-3.5 bg-white hover:shadow-sm transition-shadow text-xs space-y-1.5 border-l-4 border-l-emerald-500 bg-emerald-50/5">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-semibold text-emerald-850 bg-emerald-100/40 px-2 py-0.5 rounded">Finalized Consultation</span>
+                            <span className="badge badge-green text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-semibold">{note.status}</span>
+                          </div>
+                          <div className="grid grid-cols-1 gap-y-1">
+                            <div>
+                              <span className="text-gray-400 font-medium">Consultation No: </span>
+                              <span className="font-semibold text-gray-800 font-mono">CONS-{note.id.slice(-8).toUpperCase()}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 font-medium">Transaction No: </span>
+                              <span className="font-semibold text-purple-700 font-mono">TXN-CONS-{note.memberPin.replace(/-/g, '')}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 font-medium">Patient PIN: </span>
+                              <span className="font-semibold text-gray-800 font-mono">{note.memberPin}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 font-medium">Effectivity Year: </span>
+                              <span className="font-semibold text-gray-800">{new Date(note.visitDate).getFullYear()}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 font-medium">Consultation Date: </span>
+                              <span className="font-semibold text-gray-800">{new Date(note.visitDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 font-medium">Consultation by: </span>
+                              <span className="font-semibold text-gray-850">{note.physicianName}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Otherwise show Draft view
+                    return (
+                      <div 
+                        key={note.id} 
+                        onClick={() => handleEditDraft(note)}
+                        className="border border-gray-100 rounded-xl p-3 bg-white hover:shadow-sm transition-shadow cursor-pointer border-amber-250 bg-amber-50/20 hover:bg-amber-50/40 text-xs space-y-1"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-500">{new Date(note.visitDate).toLocaleDateString('en-PH')}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="badge text-xs badge-yellow">{note.status}</span>
+                            <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1 py-0.5 rounded">Click to edit</span>
+                          </div>
+                        </div>
+                        <p className="text-xs font-mono text-amber-600">{note.icd10Code}</p>
+                        <p className="text-xs font-semibold text-gray-800 mt-0.5">{note.assessment}</p>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{note.plan}</p>
+                        <p className="text-xs text-gray-400 mt-1">{note.physicianName}</p>
                       </div>
-                      <p className="text-xs font-mono text-amber-600">{note.icd10Code}</p>
-                      <p className="text-xs font-semibold text-gray-800 mt-0.5">{note.assessment}</p>
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">{note.plan}</p>
-                      <p className="text-xs text-gray-400 mt-1">{note.physicianName}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
+            )}
+              </>
+            )}
           </div>
         </div>
       )}
