@@ -291,7 +291,7 @@ export default function FPEPage() {
   const [riskLevel, setRiskLevel] = useState('Low Risk');
   const [initialTrancheAmount, setInitialTrancheAmount] = useState('680');
 
-  const currentFPE = selectedMember ? fpeRecords.find((fpe) => fpe.memberPin === selectedMember.philhealthPin) : null;
+  const currentFPE = selectedMember ? fpeRecords.find((fpe) => fpe.memberId === selectedMember.id) : null;
   const isDispatched = currentFPE?.status === 'Dispatched' || (currentFPE?.status as string) === 'Finalized';
 
   // Load existing data when member is selected
@@ -675,7 +675,7 @@ export default function FPEPage() {
             sourceType: 'FPE',
             sourceId: currentFPE.id,
             patientName: `${selectedMember?.firstName} ${selectedMember?.lastName}`,
-            patientPin: selectedMember?.philhealthPin || currentFPE.memberPin || '',
+            patientPin: selectedMember?.philhealthPin || '',
             description: `First Patient Encounter — Risk Level: ${currentFPE.riskLevel || 'N/A'}`,
             actor: 'Clinic Administrator',
           }),
@@ -735,7 +735,7 @@ export default function FPEPage() {
                         setSelectedMember(m);
                         setMemberSearch(`${m.firstName} ${m.lastName}`);
                         setMemberDropdownOpen(false);
-                        const hasFPE = fpeRecords.some(r => r.memberPin === m.philhealthPin);
+                        const hasFPE = fpeRecords.some(r => r.memberId === m.id);
                         setIsCaseClicked(!hasFPE);
                         setIsActiveFPE(false);
                         setActiveFPETab(1);
@@ -746,7 +746,7 @@ export default function FPEPage() {
                         <span className="font-medium text-gray-900">{m.firstName} {m.lastName}</span>
                         <span className="font-mono text-gray-400 text-xs">{m.philhealthPin}</span>
                       </div>
-                      {fpeRecords.some(r => r.memberPin === m.philhealthPin) && (
+                      {fpeRecords.some(r => r.memberId === m.id) && (
                         <span className="badge badge-green text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-semibold">FPE on file</span>
                       )}
                     </button>
@@ -794,7 +794,7 @@ export default function FPEPage() {
                             setSelectedMember(m);
                             setMemberSearch(`${m.firstName} ${m.lastName}`);
                             setMemberDropdownOpen(false);
-                            const hasFPE = fpeRecords.some(r => r.memberPin === m.philhealthPin);
+                            const hasFPE = fpeRecords.some(r => r.memberId === m.id);
                             setIsCaseClicked(!hasFPE);
                             setIsActiveFPE(false);
                             setActiveFPETab(1);
@@ -805,7 +805,7 @@ export default function FPEPage() {
                             <span className="font-medium text-gray-900">{m.firstName} {m.lastName}</span>
                             <span className="font-mono text-gray-400 text-xs">{m.philhealthPin}</span>
                           </div>
-                          {fpeRecords.some(r => r.memberPin === m.philhealthPin) && (
+                          {fpeRecords.some(r => r.memberId === m.id) && (
                             <span className="badge badge-green text-[10px] px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-semibold">FPE on file</span>
                           )}
                         </button>
@@ -3252,14 +3252,22 @@ export default function FPEPage() {
               <div className="space-y-4">
                 <div className="card-glass p-5 border-t-4 border-t-navy-900" style={{ borderTopColor: '#0A1628' }}>
                   <h2 className="text-lg font-bold text-gray-900 mb-1 font-sans">Record Status</h2>
-                  {isDispatched ? (
+                  {currentFPE?.status === 'Dispatched' ? (
                     <div className="flex items-start gap-2 bg-emerald-50 text-emerald-800 p-3 rounded-lg border border-emerald-200 my-4">
                       <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="font-semibold text-sm">Dispatched to PHIC</p>
                         <p className="text-xs opacity-80 mt-1">
-                          Transmitted on {formatDateTime(currentFPE!.dispatchedAt!)}
+                          Transmitted on {formatDateTime(currentFPE!.dispatchedAt || currentFPE!.encounterDate)}
                         </p>
+                      </div>
+                    </div>
+                  ) : currentFPE?.status === 'Finalized' ? (
+                    <div className="flex items-start gap-2 bg-purple-50 text-purple-800 p-3 rounded-lg border border-purple-200 my-4">
+                      <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-purple-650" />
+                      <div>
+                        <p className="font-semibold text-sm">Finalized & Locked</p>
+                        <p className="text-xs opacity-80 mt-1">Ready for Direct PHIC Dispatch.</p>
                       </div>
                     </div>
                   ) : currentFPE ? (

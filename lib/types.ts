@@ -149,7 +149,7 @@ export interface FPERecord {
   vitalsAndPhysicals: any;
   ncdHighRiskAssessment: any;
   riskLevel: string;
-  status: 'Draft' | 'Encoded' | 'Dispatched';
+  status: 'Draft' | 'Encoded' | 'Dispatched' | 'Finalized';
   initialTrancheAmount?: number;
   dispatchedAt: string | null;
 }

@@ -45,7 +45,7 @@ export async function POST(request: Request) {
         initialTrancheAmount: fpeData.initialTrancheAmount ?? 680.00,
       };
 
-      const existingFpe = fpeData.id && !fpeData.id.startsWith('fpe-') ? await tx.fpeRecord.findUnique({
+      const existingFpe = fpeData.id ? await tx.fpeRecord.findUnique({
         where: { id: fpeData.id }
       }) : null;
 

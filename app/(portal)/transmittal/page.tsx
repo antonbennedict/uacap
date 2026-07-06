@@ -5,6 +5,30 @@ import { Server, Calendar, CheckCircle, UploadCloud, Terminal, Shield, Lock, Act
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
 
+const formatDateTimeShift = (dateString: string): string => {
+  try {
+    const dateObj = new Date(dateString);
+    const hours = dateObj.getHours();
+    const displayDate = new Date(dateObj);
+    if (hours < 4) {
+      displayDate.setDate(displayDate.getDate() - 1);
+    }
+    const dateStr = displayDate.toLocaleDateString('en-PH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+    const timeStr = dateObj.toLocaleTimeString('en-PH', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    return `${dateStr}, ${timeStr}`;
+  } catch (e) {
+    return dateString;
+  }
+};
+
 interface DispatchRecord {
   id: string;
   sourceType: string;
@@ -28,6 +52,8 @@ export default function TransmittalPage() {
   const [records, setRecords] = useState<DispatchRecord[]>([]);
   const [filterType, setFilterType] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   // Terminal animation state
   const [isDispatching, setIsDispatching] = useState(false);
@@ -58,15 +84,32 @@ export default function TransmittalPage() {
     }
   }, [logs]);
 
+  // Date filtering logic
+  const dateFilteredRecords = records.filter(r => {
+    if (!startDate && !endDate) return true;
+    if (!r.dispatchedAt) return false;
+    const dateObj = new Date(r.dispatchedAt);
+    if (dateObj.getHours() < 4) {
+      dateObj.setDate(dateObj.getDate() - 1);
+    }
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const recordLocalLocalDateStr = `${year}-${month}-${day}`;
+    if (startDate && recordLocalLocalDateStr < startDate) return false;
+    if (endDate && recordLocalLocalDateStr > endDate) return false;
+    return true;
+  });
+
   // Counts
-  const fpeCount = records.filter(r => r.sourceType === 'FPE').length;
-  const consultationCount = records.filter(r => r.sourceType === 'Consultation').length;
-  const prescriptionCount = records.filter(r => r.sourceType === 'Prescription').length;
-  const labCount = records.filter(r => r.sourceType === 'LabResult').length;
-  const totalRecords = records.length;
+  const fpeCount = dateFilteredRecords.filter(r => r.sourceType === 'FPE').length;
+  const consultationCount = dateFilteredRecords.filter(r => r.sourceType === 'Consultation').length;
+  const prescriptionCount = dateFilteredRecords.filter(r => r.sourceType === 'Prescription').length;
+  const labCount = dateFilteredRecords.filter(r => r.sourceType === 'LabResult').length;
+  const totalRecords = dateFilteredRecords.length;
 
   // Filtered list
-  const filtered = filterType === 'All' ? records : records.filter(r => r.sourceType === filterType);
+  const filtered = filterType === 'All' ? dateFilteredRecords : dateFilteredRecords.filter(r => r.sourceType === filterType);
 
   const runBundleDispatch = () => {
     if (totalRecords === 0) {
@@ -132,6 +175,43 @@ export default function TransmittalPage() {
           Refresh
         </button>
       </div>
+      {/* Date Range Picker */}
+      <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-sm flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-gray-800">Filter Dispatched Records by Date Range</p>
+          <p className="text-xs text-gray-500">Pick a range of records to submit / bundle dispatch.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-650 font-semibold">Start:</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="form-input text-xs"
+              style={{ padding: '0.4rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-650 font-semibold">End:</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="form-input text-xs"
+              style={{ padding: '0.4rem 0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}
+            />
+          </div>
+          {(startDate || endDate) && (
+            <button
+              onClick={() => { setStartDate(''); setEndDate(''); }}
+              className="text-xs font-semibold text-red-500 hover:text-red-750 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -180,7 +260,7 @@ export default function TransmittalPage() {
               >
                 {type === 'All' ? 'All Records' : SOURCE_CONFIG[type]?.label || type}
                 <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[10px] ${filterType === type ? 'bg-white/20' : 'bg-gray-100'}`}>
-                  {type === 'All' ? totalRecords : records.filter(r => r.sourceType === type).length}
+                  {type === 'All' ? totalRecords : dateFilteredRecords.filter(r => r.sourceType === type).length}
                 </span>
               </button>
             ))}
@@ -221,7 +301,7 @@ export default function TransmittalPage() {
                         <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-400">
                           <span>PIN: <span className="font-mono font-medium text-gray-600">{record.patientPin}</span></span>
                           <span>By: {record.actor}</span>
-                          <span>{formatDateTime(record.dispatchedAt)}</span>
+                          <span>{formatDateTimeShift(record.dispatchedAt)}</span>
                         </div>
                       </div>
                     </div>

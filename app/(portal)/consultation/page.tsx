@@ -81,6 +81,7 @@ function ConsultationContent() {
   const finalizeSOAPNote = async (id: string) => { setSoapNotes(prev => prev.map(n => n.id === id ? { ...n, status: 'Finalized' } : n)); };
   
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [justFinalizedNoteId, setJustFinalizedNoteId] = useState<string | null>(null);
   const [isCaseClicked, setIsCaseClicked] = useState(false);
 
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -533,19 +534,17 @@ function ConsultationContent() {
       const data = await response.json();
       if (data.soapNotes) {
         setSoapNotes(data.soapNotes);
+        const savedNote = data.soapNotes.find((n: any) => 
+          n.id === editingDraftId || 
+          (n.icd10Code === matchedIcd.code && n.plan === planText && n.subjective === subjectiveText)
+        );
+        if (savedNote) {
+          setJustFinalizedNoteId(savedNote.id);
+        } else if (data.soapNotes.length > 0) {
+          setJustFinalizedNoteId(data.soapNotes[0].id);
+        }
       }
-      // Reset form and redirect to search
-      setEditingDraftId(null);
-      setChiefComplaints([]); setOtherComplaint(''); setHistoryOfIllness('');
-      setAssessment(''); setSelectedDiagnoses([]); setPlan(''); setSelectedIcd(null);
-      setLabExams({}); setOtherExamVal(''); setManagementChecked([]); setManagementOther('');
-      setObjective({ bloodPressure: '', heartRate: '', temperature: '', respiratoryRate: '', oxygenSat: '', weight: '', height: '' });
-      setVisualAcuityLeft(''); setVisualAcuityRight(''); setHeightVal(''); setHeightUnit('cm'); setWeightVal(''); setWeightUnit('kg'); setBmiVal(''); setOtherPhysicalFindings('');
-      setSelectedMember(null);
-      setMemberSearch('');
-      setIsActiveConsult(false);
-      setIsCaseClicked(false);
-      toast.success('Consultation finalized and added to patient chart!');
+      toast.success('Consultation finalized and added to patient chart! You can now transmit it to PhilHealth.');
     } catch (err) {
       toast.error('Failed to finalize consultation.');
     }
@@ -1626,10 +1625,56 @@ function ConsultationContent() {
                 {/* Attending Physician & Actions */}
             {isActiveConsult && (
               <div className="card-glass p-5">
-                <div className="space-y-2">
-                  <button onClick={handleFinalize} disabled={!selectedMember} className="btn-primary w-full justify-center bg-purple-600 hover:bg-purple-700 disabled:opacity-50">
-                    <CheckCircle className="w-4 h-4" /> Finalize Consultation
-                  </button>
+                <div className="space-y-2 font-sans">
+                  {!justFinalizedNoteId ? (
+                    <button onClick={handleFinalize} disabled={!selectedMember} className="btn-primary w-full justify-center bg-purple-600 hover:bg-purple-700 disabled:opacity-50">
+                      <CheckCircle className="w-4 h-4" /> Finalize Consultation
+                    </button>
+                  ) : (
+                    <>
+                      <div className="text-center p-3 bg-purple-50 text-purple-750 rounded-xl text-xs font-bold mb-2">
+                        Consultation Finalized!
+                      </div>
+                      <button
+                        onClick={() => handleDispatchConsultation(justFinalizedNoteId)}
+                        disabled={isDispatching || dispatchedNoteId === justFinalizedNoteId}
+                        className={`btn-primary w-full justify-center ${
+                          dispatchedNoteId === justFinalizedNoteId
+                            ? 'bg-gray-105 text-gray-400 cursor-not-allowed border-transparent'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow'
+                        }`}
+                      >
+                        {isDispatching ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : dispatchedNoteId === justFinalizedNoteId ? (
+                          <CheckCircle className="w-4 h-4" />
+                        ) : (
+                          <UploadCloud className="w-4 h-4" />
+                        )}
+                        {isDispatching ? 'Dispatching...' : (dispatchedNoteId === justFinalizedNoteId ? 'Successfully Dispatched' : 'Direct PHIC Dispatch')}
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          // Reset form and redirect to search
+                          setJustFinalizedNoteId(null);
+                          setEditingDraftId(null);
+                          setChiefComplaints([]); setOtherComplaint(''); setHistoryOfIllness('');
+                          setAssessment(''); setSelectedDiagnoses([]); setPlan(''); setSelectedIcd(null);
+                          setLabExams({}); setOtherExamVal(''); setManagementChecked([]); setManagementOther('');
+                          setObjective({ bloodPressure: '', heartRate: '', temperature: '', respiratoryRate: '', oxygenSat: '', weight: '', height: '' });
+                          setVisualAcuityLeft(''); setVisualAcuityRight(''); setHeightVal(''); setHeightUnit('cm'); setWeightVal(''); setWeightUnit('kg'); setBmiVal(''); setOtherPhysicalFindings('');
+                          setSelectedMember(null);
+                          setMemberSearch('');
+                          setIsActiveConsult(false);
+                          setIsCaseClicked(false);
+                        }}
+                        className="btn-secondary w-full justify-center text-xs font-bold py-2 mt-2"
+                      >
+                        Close & Done
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
