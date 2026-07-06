@@ -622,6 +622,11 @@ export default function PrescriptionBuilderPage() {
                     <button
                       key={m.id}
                       onClick={() => {
+                        const hasFPE = (m as any).fpeRecords && (m as any).fpeRecords.length > 0;
+                        if (!hasFPE) {
+                          toast.error(`Cannot prescribe medicine for ${m.firstName} ${m.lastName}: No FPE record found on file. Please complete FPE encoding first.`);
+                          return;
+                        }
                         setSelectedMember(m);
                         setMemberSearch(`${m.firstName} ${m.lastName}`);
                         setMemberDropdownOpen(false);
@@ -675,6 +680,11 @@ export default function PrescriptionBuilderPage() {
                     <button
                       key={m.id}
                       onClick={() => {
+                        const hasFPE = (m as any).fpeRecords && (m as any).fpeRecords.length > 0;
+                        if (!hasFPE) {
+                          toast.error(`Cannot prescribe medicine for ${m.firstName} ${m.lastName}: No FPE record found on file. Please complete FPE encoding first.`);
+                          return;
+                        }
                         setSelectedMember(m);
                         setMemberSearch(`${m.firstName} ${m.lastName}`);
                         setMemberDropdownOpen(false);

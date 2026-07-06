@@ -197,7 +197,16 @@ export default function LabResultsPage() {
               {memberDropdownOpen && (
                 <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
                   {filteredMembers.map(m => (
-                    <button key={m.id} onClick={() => { setSelectedMember(m); setMemberSearch(`${m.firstName} ${m.lastName}`); setMemberDropdownOpen(false); }}
+                    <button key={m.id} onClick={() => {
+                      const hasFPE = (m as any).fpeRecords && (m as any).fpeRecords.length > 0;
+                      if (!hasFPE) {
+                        toast.error(`Cannot encode lab results for ${m.firstName} ${m.lastName}: No FPE record found on file. Please complete FPE encoding first.`);
+                        return;
+                      }
+                      setSelectedMember(m);
+                      setMemberSearch(`${m.firstName} ${m.lastName}`);
+                      setMemberDropdownOpen(false);
+                    }}
                       className="w-full flex justify-between px-4 py-3 hover:bg-rose-50 text-left border-b border-gray-50 text-sm">
                       <span className="font-medium">{m.firstName} {m.lastName}</span>
                       <span className="font-mono text-gray-400 text-xs">{m.philhealthPin}</span>

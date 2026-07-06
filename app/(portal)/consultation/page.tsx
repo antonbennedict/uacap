@@ -310,6 +310,11 @@ function ConsultationContent() {
     if (pin) {
       const member = allMembers.find(m => m.philhealthPin === pin);
       if (member) {
+        const hasFPE = (member as any).fpeRecords && (member as any).fpeRecords.length > 0;
+        if (!hasFPE) {
+          toast.error(`Cannot consult ${member.firstName} ${member.lastName}: No FPE record found on file. Please complete FPE encoding first.`);
+          return;
+        }
         setSelectedMember(member);
         setMemberSearch(`${member.firstName} ${member.lastName}`);
       }
@@ -581,7 +586,16 @@ function ConsultationContent() {
             {memberDropdownOpen && (
               <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
                 {filteredMembers.map(m => (
-                  <button key={m.id} onClick={() => { setSelectedMember(m); setMemberSearch(`${m.firstName} ${m.lastName}`); setMemberDropdownOpen(false); }}
+                  <button key={m.id} onClick={() => {
+                    const hasFPE = (m as any).fpeRecords && (m as any).fpeRecords.length > 0;
+                    if (!hasFPE) {
+                      toast.error(`Cannot consult ${m.firstName} ${m.lastName}: No FPE record found on file. Please complete FPE encoding first.`);
+                      return;
+                    }
+                    setSelectedMember(m);
+                    setMemberSearch(`${m.firstName} ${m.lastName}`);
+                    setMemberDropdownOpen(false);
+                  }}
                     className="w-full flex justify-between px-4 py-3 hover:bg-purple-50 text-left border-b border-gray-50 text-sm">
                     <span className="font-medium">{m.firstName} {m.lastName}</span>
                     <span className="font-mono text-gray-400 text-xs">{m.philhealthPin}</span>
@@ -613,7 +627,16 @@ function ConsultationContent() {
                 {memberDropdownOpen && (
                   <div className="absolute z-30 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-48 overflow-y-auto">
                     {filteredMembers.map(m => (
-                      <button key={m.id} onClick={() => { setSelectedMember(m); setMemberSearch(`${m.firstName} ${m.lastName}`); setMemberDropdownOpen(false); }}
+                      <button key={m.id} onClick={() => {
+                        const hasFPE = (m as any).fpeRecords && (m as any).fpeRecords.length > 0;
+                        if (!hasFPE) {
+                          toast.error(`Cannot consult ${m.firstName} ${m.lastName}: No FPE record found on file. Please complete FPE encoding first.`);
+                          return;
+                        }
+                        setSelectedMember(m);
+                        setMemberSearch(`${m.firstName} ${m.lastName}`);
+                        setMemberDropdownOpen(false);
+                      }}
                         className="w-full flex justify-between px-4 py-3 hover:bg-purple-50 text-left border-b border-gray-50 text-sm">
                         <span className="font-medium">{m.firstName} {m.lastName}</span>
                         <span className="font-mono text-gray-400 text-xs">{m.philhealthPin}</span>
