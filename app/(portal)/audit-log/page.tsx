@@ -96,8 +96,8 @@ export default function AuditLogPage() {
     return sortedAndFilteredLogs.slice(start, start + pageSize);
   }, [sortedAndFilteredLogs, safePage, pageSize]);
 
-  const getActionColor = (action: string) => {
-    const act = action.toUpperCase();
+  const getActionColor = (action?: string) => {
+    const act = (action || '').toUpperCase();
     if (act.includes('CREATE') || act.includes('ADD')) return 'badge-emerald';
     if (act.includes('DELETE') || act.includes('REMOVE')) return 'badge-red';
     if (act.includes('UPDATE') || act.includes('EDIT')) return 'badge-yellow';

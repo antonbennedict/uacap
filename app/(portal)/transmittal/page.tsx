@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Server, Calendar, CheckCircle, UploadCloud, Terminal, Shield, Lock, Activity, Stethoscope, ClipboardList, Pill, FlaskConical, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateTime } from '@/lib/utils';
+import { useSession } from 'next-auth/react';
 
 const formatDateTimeShift = (dateString: string): string => {
   try {
@@ -49,6 +50,7 @@ const SOURCE_CONFIG: Record<string, { label: string; color: string; bg: string; 
 };
 
 export default function TransmittalPage() {
+  const { data: session } = useSession();
   const [records, setRecords] = useState<DispatchRecord[]>([]);
   const [filterType, setFilterType] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
@@ -147,9 +149,45 @@ export default function TransmittalPage() {
         i++;
       } else {
         clearInterval(interval);
-        setIsDispatching(false);
-        setDispatchComplete(true);
-        toast.success(`Transmittal bundle (${totalRecords} records) successfully dispatched to PhilHealth NCR South.`);
+        
+        // Calculate start and end dates from the records being transmitted
+        const dates = dateFilteredRecords
+          .map(r => r.dispatchedAt)
+          .filter(Boolean)
+          .map(d => new Date(d).getTime());
+        const startDt = dates.length > 0 ? new Date(Math.min(...dates)) : new Date();
+        const endDt = dates.length > 0 ? new Date(Math.max(...dates)) : new Date();
+        const fpeRecordIds = dateFilteredRecords
+          .filter(r => r.sourceType === 'FPE')
+          .map(r => r.sourceId);
+
+        fetch('/api/transmittal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clinicId: 'R3-PMP-2024-001',
+            startDate: startDt.toISOString(),
+            endDate: endDt.toISOString(),
+            fpeCount,
+            prescriptionCount,
+            soapCount: consultationCount,
+            labCount,
+            actor: session?.user?.name || 'Clinic Staff',
+            fpeRecordIds
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          setIsDispatching(false);
+          setDispatchComplete(true);
+          toast.success(`Transmittal bundle (${totalRecords} records) successfully dispatched to PhilHealth NCR South and saved to database!`);
+        })
+        .catch(err => {
+          console.error('Failed to save transmittal:', err);
+          setIsDispatching(false);
+          setDispatchComplete(true);
+          toast.warning(`Transmittal complete, but failed to log to database.`);
+        });
       }
     }, 350);
   };
@@ -389,6 +427,7 @@ export default function TransmittalPage() {
               ) : (
                 <div className="space-y-1.5">
                   {logs.map((log, idx) => {
+                    if (!log) return null;
                     let colorClass = 'text-gray-300';
                     if (log.includes('[SYS]')) colorClass = 'text-blue-400';
                     if (log.includes('[AGG]')) colorClass = 'text-purple-400';
