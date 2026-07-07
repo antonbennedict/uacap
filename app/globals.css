@@ -27,6 +27,28 @@
     --ring: 152 100% 26%;
     --radius: 0.5rem;
   }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 152 100% 26%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 152 100% 26%;
+  }
 }
 
 @layer base {
@@ -47,7 +69,7 @@
 @layer components {
   /* Sidebar */
   .sidebar {
-    @apply w-64 h-screen sticky top-0 flex flex-col overflow-y-auto select-none;
+    @apply h-screen sticky top-0 flex flex-col overflow-y-auto select-none;
     background: linear-gradient(180deg, #0A1628 0%, #1a2a40 100%);
   }
 
@@ -177,6 +199,74 @@
       background: white !important;
       font-family: 'Times New Roman', serif !important;
     }
+  }
+
+  /* Dark mode component overrides */
+  .dark .card-glass {
+    @apply bg-slate-900/90 border-slate-800 text-white shadow-none;
+  }
+  .dark .card-stat {
+    @apply bg-slate-800/80 border-slate-800 text-white shadow-none;
+  }
+  .dark .form-input {
+    @apply bg-slate-950 border-slate-800 text-slate-100 placeholder-slate-500 focus:ring-emerald-500/30 focus:border-emerald-500;
+  }
+  .dark select.form-input {
+    @apply bg-slate-950 border-slate-800 text-slate-100;
+  }
+  .dark .data-table thead tr {
+    @apply bg-slate-950 border-slate-800;
+  }
+  .dark .data-table thead th {
+    @apply text-slate-400;
+  }
+  .dark .data-table tbody tr {
+    @apply border-slate-900 hover:bg-slate-800/20;
+  }
+  .dark .data-table tbody td {
+    @apply text-slate-300;
+  }
+  .dark .btn-secondary {
+    @apply bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 hover:border-slate-600;
+  }
+  .dark label {
+    @apply text-slate-400;
+  }
+  .dark p, .dark span, .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    @apply text-slate-100;
+  }
+  .dark .text-gray-500, .dark .text-slate-500 {
+    @apply text-slate-400;
+  }
+  .dark .text-gray-650, .dark .text-slate-650 {
+    @apply text-slate-300;
+  }
+  .dark .text-gray-600, .dark .text-slate-650 {
+    @apply text-slate-400;
+  }
+  .dark .text-gray-900, .dark .text-slate-900 {
+    @apply text-slate-100;
+  }
+  .dark .text-gray-600, .dark .text-slate-600 {
+    @apply text-slate-300;
+  }
+  .dark .text-gray-800, .dark .text-slate-800 {
+    @apply text-slate-200;
+  }
+  .dark .bg-gray-50, .dark .bg-slate-50 {
+    @apply bg-slate-950;
+  }
+  .dark .bg-gray-100, .dark .bg-slate-100 {
+    @apply bg-slate-900;
+  }
+  .dark .border-gray-100, .dark .border-slate-100 {
+    @apply border-slate-800;
+  }
+  .dark .border-gray-200, .dark .border-slate-200 {
+    @apply border-slate-800;
+  }
+  .dark .bg-white {
+    @apply bg-slate-900;
   }
 }
 

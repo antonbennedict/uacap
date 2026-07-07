@@ -9,6 +9,7 @@ import { formatDateTime } from '@/lib/utils';
 export default function GamotPage() {
   const [medicines, setMedicines] = useState<any[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [auditLogKey, setAuditLogKey] = useState<number>(0);
 
   const fetchMedicines = () => {
     fetch('/api/medicines')
@@ -17,6 +18,7 @@ export default function GamotPage() {
         if (data.medicines) {
           setMedicines(data.medicines);
           setLastUpdated(new Date().toISOString());
+          setAuditLogKey(prev => prev + 1);
         }
       })
       .catch(console.error);
@@ -126,7 +128,7 @@ export default function GamotPage() {
       </div>
 
       {/* Audit log (collapsible) */}
-      <AuditLog />
+      <AuditLog key={auditLogKey} />
     </div>
   );
 }

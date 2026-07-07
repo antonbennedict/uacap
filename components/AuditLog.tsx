@@ -158,7 +158,7 @@ export default function AuditLog() {
                         )}
                       </div>
                     )}
-                    {entry.metadata.totalAmount && (
+                    {entry.metadata?.totalAmount && (
                       <span className="text-xs text-blue-600 font-semibold mt-1 block">
                         ₱{Number(entry.metadata.totalAmount).toFixed(2)} · {entry.metadata.itemCount} item{Number(entry.metadata.itemCount) !== 1 ? 's' : ''}
                       </span>

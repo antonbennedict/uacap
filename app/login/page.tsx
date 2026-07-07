@@ -97,8 +97,8 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col h-full p-12">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-auto">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl bg-white border border-white/20">
-              <img src="/ua-logo.png" alt="UA Logo" className="w-9 h-9 object-contain" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl bg-white border border-white/20 overflow-hidden">
+              <img src="/uacap-logo.png" alt="UACAP Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-white font-bold text-xl tracking-tight">YAKAP</h1>
@@ -168,8 +168,8 @@ export default function LoginPage() {
 
         {/* Mobile logo */}
         <div className="lg:hidden flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg bg-white border border-gray-100">
-            <img src="/ua-logo.png" alt="UA Logo" className="w-9 h-9 object-contain" />
+          <div className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg bg-white border border-gray-100 overflow-hidden">
+            <img src="/uacap-logo.png" alt="UACAP Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="font-bold text-lg text-gray-900">UACAP</h1>

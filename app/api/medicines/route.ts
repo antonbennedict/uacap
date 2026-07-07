@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 
 export async function GET() {
@@ -12,6 +14,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
     const body = await request.json();
     const { medicineId, action, quantity } = body as {
       medicineId: string;
@@ -38,10 +41,23 @@ export async function PATCH(request: NextRequest) {
         newQuantity -= quantity;
       }
 
-      return await tx.medicine.update({
+      const updatedMed = await tx.medicine.update({
         where: { id: medicineId },
         data: { quantity: newQuantity },
       });
+
+      // Insert Audit Log entry inside transaction context
+      await tx.auditLog.create({
+        data: {
+          actionType: action === 'restock' ? 'RESTOCK' : 'STOCK_DEDUCTED',
+          description: action === 'restock'
+            ? `Restocked ${quantity} units of ${currentMed.genericName} (${currentMed.dosageForm || 'Tablet'}). New total: ${newQuantity}.`
+            : `Deducted ${quantity} units of ${currentMed.genericName} (${currentMed.dosageForm || 'Tablet'}). New total: ${newQuantity}.`,
+          actor: session?.user?.name || 'Clinic Staff',
+        }
+      });
+
+      return updatedMed;
     });
 
     return NextResponse.json({ medicine });
